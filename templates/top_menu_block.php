@@ -68,7 +68,7 @@
                 </div>
             </div>
             <nav class="header_menu_mobile">
-                <div class="header_menu_item">
+                <div class="header_menu_item" title="ewfg">
                     <a href="#">Главная</a>
                 </div>
                 <div class="header_menu_item">

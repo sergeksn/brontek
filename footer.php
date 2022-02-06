@@ -164,14 +164,19 @@
 <!--<script src="/assets/js/jquery.min.js"></script>
 <script src="/assets/js/main.js"></script>-->
 <script>
-    let kol = 100000;
+    let kol = 1000000;
+
+
     function ksn_spead_test(){
         let time_start = new Date().getTime();
         for(let i = 0; i < kol; i++){
             //$("#idishnik")
             //$("#idishnik").addClass("test")
             //$("#idishnik").hasClass("test")
-            $("a.test_wf.data_2_tess#idishnik.thri_cl")
+            //$("a.test_wf.data_2_tess#idishnik.thri_cl")
+            //$()
+            //$().each(["241","efewf", "effg"],test_f);
+            $(".header_menu_item").removeAttr("title class")
         }
         let time_finish = new Date().getTime(),
             result = (time_finish - time_start)/1000;
@@ -184,7 +189,10 @@
             //jQuery("#idishnik")
             //jQuery("#idishnik").addClass("test")
             //jQuery("#idishnik").hasClass("test")
-            jQuery("a.test_wf.data_2_tess#idishnik.thri_cl")
+            //jQuery("a.test_wf.data_2_tess#idishnik.thri_cl")
+            //jQuery()
+            //jQuery.each(["241","efewf", "effg"],test_f);
+            jQuery(".header_menu_item").removeAttr("title class")
         }
         let time_finish = new Date().getTime(),
             result = (time_finish - time_start)/1000;
@@ -201,8 +209,21 @@
         console.log(result+" сек")
     }
 
-    console.log($("a.test_wf.data_2_tess#idishnik.thri_cl"))
-    console.log($("div.header_menu_item"))
+
+    //console.log($(".header_menu_item").removeAttr("title class"))
+
+    //console.log($(".header_menu_item").removeAttr("class title"))
+
+    //console.log(jQuery(".header_menu_item").removeAttr("class title"))
+
+
+    
+    //console.log($("div.header_search_button").siblings("nav"))
+    //console.log(jQuery("div.header_search_button").siblings("nav"))
+
+
+    //console.log($("div.header_search_button"))
+    //console.log(jQuery("div.header_search_button"))
 
     //ksn_spead_test()
     //jQuery_spead_test()
@@ -215,8 +236,8 @@
 
     //$("#idishnik")
 
-    //console.log($("a"))
-    //console.log(jQuery("a"))
+    //console.log($("#idishnik"))
+    //console.log(jQuery("#idishnik"))
 
     //("a,  a.data_2_tess.thri_cl#idishnik.test_wf,    div.search_wrapper, #idishnik, .header_menu_item,    a.test_wf#idishnik, #idishnik.test_wf, a#idishnik.data_2_tess.test_wf, header")
 
@@ -225,7 +246,14 @@
     //console.log(jQuery("a,  a.data_2_tess.thri_cl#idishnik.test_wf,    div.search_wrapper, #idishnik, .header_menu_item,    a.test_wf#idishnik, #idishnik.test_wf, a#idishnik.data_2_tess.test_wf, header"))
 
 
+
+    //console.log($(".header_menu_item").each(test_f))
+
+    //console.log("!@#")
+    //console.log(jQuery(".header_menu_item").each(test_f))
+
     
+
 </script>
 </body>
 

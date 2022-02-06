@@ -4,17 +4,52 @@ jQuery.noConflict();
 
 //объект с основными функциями
 const KSN_jQuery = {
-    //фнкция возвращает новый объект внеся в него все элементы из elements и его длинну length используя в качестве своего прототипа KSN_jQuery объект
-    output: function(elements = []) {
-        //console.log(KSN_instens)
-        let obj = KSN_instens; //создаём объект obj с прототипом KSN_jQuery
+    //метод инициализации, ищет все подходящие селекторы и возвращает результат в виде объекта с прототипом KSN_jQuery
+    init: function(selector) {
+        let obj = this; //объект с прототипом KSN_jQuery
 
-
-        //если передан просто узел DOM его нужно преобразовать в итерируемый элемент
-        if (elements.length === undefined) {
-            elements = this.toArray([elements]); //преобразуем в массив
+        //если селектор $(""), $(null), $(undefined), $(false)
+        if (!selector) {
+            return obj; //возвращаем наш объект obj
         }
-        //если передан просто узел DOM его нужно преобразовать в итерируемый элемент
+        //если селектор $(""), $(null), $(undefined), $(false)
+
+        //для текстовых сетекторов "#test, .class_test>div.tested, header, a[href='/wefewf/ewf']"
+        if (typeof selector === "string") {
+            let elements = this.return_selectors_arr(selector); //возвращаем все найденые элементы в виде массива
+
+            //перебираем все элементы elements и записываем их по порядку в объект obj
+            for (let i = 0; i < elements.length; i++) {
+                obj[i] = elements[i];
+            }
+            //перебираем все элементы elements и записываем их по порядку в объект obj
+
+            obj.length = elements.length; //записываем в коне количество элементов объекта объекта length
+
+            return obj; //возвращаем наш объект obj с прототипом KSN_jQuery и всеми элементами найдеными по селекторам
+        }
+        //для текстовых сетекторов ".class_test>div.tested"
+
+        //для сетекторов типа DOMElement таких как window, document...
+        obj[0] = selector; //записываем объект DOMElement
+        obj.length = 1;
+        return obj; //возвращаем наш объект obj с прототипом KSN_jQuery
+        //для сетекторов типа DOMElement таких как window, document...
+    },
+    //метод инициализации, ищет все подходящие селекторы и возвращает результат в виде объекта с прототипом KSN_jQuery
+
+    //метод создаёт новый объект с прототипом KSN_jQuery, и заполянет его элементами из elements
+    construct_new_ksn: function(elements = null) {
+        //ПРИМЕЧАНИЕ: создать новый объект с заданым прототипом и записать в него занчения намного быстрее чем чистить старый объект, а потом ещё и заполянть его значениями
+        //console.log("$")
+        let obj = Object.create(KSN_jQuery); //создаём объект obj с прототипом KSN_jQuery
+
+        //если ничего не передано для формирования нового объекта, то возвращаем новый объект с длинной в 0
+        if (elements === null) {
+            obj.length = 0;
+            return obj;
+        }
+        //если ничего не передано для формирования нового объекта, то возвращаем новый объект с длинной в 0
 
         //перебираем все элементы elements и записываем их по порядку в объект obj
         for (let i = 0; i < elements.length; i++) {
@@ -25,37 +60,14 @@ const KSN_jQuery = {
 
         return obj; //возвращаем наш объект obj
     },
+    //метод создаёт новый объект с прототипом KSN_jQuery, и заполянет его элементами из elements
 
-    //производит итерации над объектами и для каждого итирируемого элемента объекта вызиывает функцию callback
-    //arg_1 - объект или функция
-    //arg_2 - функция обратного вызова
-    each: function(arg_1, arg_2) {
-        let obj = typeof arg_1 === "function" ? this : arg_1, //если в arg_1 передана функция то obj будет this
-            callback = typeof arg_1 === "function" ? arg_1 : arg_2; //если в arg_1 передана функция то callback будет arg_1
-
-        obj = this.toArray(obj); //преобразуем в массив для итерации
-
-        //перебираем массив с итерируемыми элементами
-        for (let i = 0; i < obj.length; i++) {
-            callback.call(this.output(obj[i]), i, obj[i]); //дял каждого итирируемого элемента вызываем функцию обратиного вызова в которую в качестве this передаём объект текущего итериремого элемента , а в качестве аргументов передаём индекс и значение в массиве соответственно
-        }
-        //перебираем массив с итерируемыми элементами
-
-        return this.output(obj); //возвращаем объект
-    },
-    //производит итерации над объектами и для каждого итирируемого элемента объекта вызиывает функцию callback
-
-    //возвращает объект состоящий из всех элементов найденых по селекстором через запятую, примечательно что будет использован оптимальный поиск по дереву DOM для каждого типа селектора
+    //возвращает массив состоящий из всех элементов найденых по селекстором через запятую, примечательно что будет использован оптимальный поиск по дереву DOM для каждого типа селектора
     //selectors - строка в виде селекторов, можно несколько перечисленных через запятую, к примеру: ".test, a.web, header, nav"
     //element_fo_search - элемент в котором будет производится поиск всех элементов по селектору
-
-
-    //ВАЖНО: настрйоить чтоб корректно работало div.wfwf#ewfwef или #ewfgewg.wefgewgewg
-
-
-    return_selectors_obj: function(selectors, element_fo_search = document) {
-        let selectors_arr = selectors.split(","), //массив со списком селекторов
-            result = []; //сюда будем записывать все элементы DOM найденые по соответствующим селекторам
+    //result сюда будем записывать все элементы DOM найденые по соответствующим селекторам
+    return_selectors_arr: function(selectors, element_fo_search = document, result = []) {
+        let selectors_arr = this.string_to_array(selectors, ","); //массив со списком селекторов
 
         //перебираем все предоставленные селекторы разделённые запятой и записываем их в массив
         for (let i = 0; i < selectors_arr.length; i++) {
@@ -74,7 +86,13 @@ const KSN_jQuery = {
             if (proverka) {
                 //id
                 if (selector.includes("#")) {
-                    result = this.return_skleniy_arr(result, [element_fo_search.getElementById(selector.slice(1))]);
+                    let el_fo_id = element_fo_search.getElementById(selector.slice(1)); //элемент найденый по id
+
+                    //если el_fo_id был найден и нее равен null
+                    if (el_fo_id) {
+                        result.push.apply(result, [el_fo_id]); //поскольку первая возможная запись в массив то просто записываем без всяких доп проверок на содержимое массива result
+                    }
+                    //если el_fo_id был найден и нее равен null
                 }
                 //id
 
@@ -100,13 +118,13 @@ const KSN_jQuery = {
         }
         //перебираем все предоставленные селекторы разделённые запятой и записываем их в массив
 
-        return this.output(result); //возвращаем новый объект со всеми элементами
+        return result; //возвращаем массив со всеми элементами
     },
-    //возвращает объект состоящий из всех элементов найденых по селекстором через запятую, примечательно что будет использован оптимальный поиск по дереву DOM для каждого типа селектора
+    //возвращает массив состоящий из всех элементов найденых по селекстором через запятую, примечательно что будет использован оптимальный поиск по дереву DOM для каждого типа селектора
 
     //преобразует строку в массив разделитель пробел
-    string_to_array: function(string) {
-        return string.split(" "); //возвращаем массив
+    string_to_array: function(string, separator = " ") {
+        return string.split(separator); //возвращаем массив
     },
 
     //преобразуем массивоподобные объекты в массивы
@@ -132,9 +150,9 @@ const KSN_jQuery = {
     //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект содержащий все элементы обеих массивов
     //clone_clean - если true то вернёт массив без одинаковых значений
     return_skleniy_arr: function(arr_1, arr_2, clone_clean = true) {
-        let result = [];//массив в который будем записывать все элементы
-        result.push.apply(result, arr_1);//записываем данные из arr_1
-        result.push.apply(result, arr_2);//записываем данные из arr_2
+        let result = []; //массив в который будем записывать все элементы
+        result.push.apply(result, arr_1); //записываем данные из arr_1
+        result.push.apply(result, arr_2); //записываем данные из arr_2
         return clone_clean ? this.return_no_clone_arr(result) : result;
     },
     //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект содержащий все элементы обеих массивов
@@ -158,6 +176,27 @@ const KSN_jQuery = {
     },
     //очищает массив arr от значений values
 
+    //производит итерации над объектами и для каждого итирируемого элемента объекта вызиывает функцию callback
+    //arg_1 - объект или функция
+    //arg_2 - функция обратного вызова
+    //++
+    each: function(arg_1, arg_2) {
+        let obj = typeof arg_1 === "function" ? this : arg_1, //если в arg_1 передана функция то obj будет this
+            callback = typeof arg_1 === "function" ? arg_1 : arg_2; //если в arg_1 передана функция то callback будет arg_1
+
+        obj = Array.isArray(obj) ? obj : this.toArray(obj); //преобразуем в массив для итераций если нужно
+
+        //перебираем массив с итерируемыми элементами
+        for (let i = 0; i < obj.length; i++) {
+            callback.call(obj[i], i, obj[i]); //дял каждого итирируемого элемента вызываем функцию обратиного вызова в которую в качестве this передаём объект текущего итериремого элемента , а в качестве аргументов передаём индекс и значение в массиве соответственно
+        }
+        //перебираем массив с итерируемыми элементами
+
+        return this.construct_new_ksn(obj); //возвращаем объект
+    },
+    //производит итерации над объектами и для каждого итирируемого элемента объекта вызиывает функцию callback
+
+    //добавляем слушатель события
     //event - строка событий которые нужно прослушивать на элементе, пример: "touchend click resize focus blur"
     //callback - функция которую нужно вызвать при срабатывании события из строки event, можно указать название функции, пример: touch_menu_open_close ; или указать функцию, пример: function(){console.log("Выполняем что-то, при срабатывании события из массива event")}
     //options_event - сюда нужно передать объект с обциями для данного слушателя
@@ -170,7 +209,9 @@ const KSN_jQuery = {
             }
         }
     },
+    //добавляем слушатель события
 
+    //удаляем слушатель события
     //event - строка событий которые нужно отключить от прослушивания для элемента, пример: "touchend click resize"
     //callback - функция которая должна быть отключена для данных слушателей событий
     off: function(event, callback, elements = this) {
@@ -182,23 +223,44 @@ const KSN_jQuery = {
             }
         }
     },
+    //удаляем слушатель события
+
+    //удаляем атрибут
+    //attributs - идин или несколько атрибутов которые нужно удалить разделённые прбелами
+    //elements - один или более элементов атрибуты attributs в которых нужно удалить
+    //++
+    removeAttr: function(attributs, elements = this) {
+        attributs = this.string_to_array(attributs); //преобрзуем строковый список в массив
+
+        //перебираем атрибуты для удаления
+        for (let b = 0; b < attributs.length; b++) {
+            //перебираем все элементы у которых нужно удалить атрибуты
+            for (let i = 0; i < elements.length; i++) {
+                elements[i].removeAttribute(attributs[b]);//удаляем указаннй трибут у текущего итерируемого элемента
+            }
+            //перебираем все элементы у которых нужно удалить атрибуты
+        }
+        //перебираем атрибуты для удаления
+
+        return this; //возвращаем объект this
+    },
+    //удаляем атрибут
 
     //дополняем или перезаписываем значение атрибута
-    //removeAttr("attribut") - заменено на attr("attribut", "")
+    //attribut - один атирибут занчение которого нужно получить или изменить
+    //value - значение которое нужно задать атрибуту
+    //type - тип операции с атрибутом: "reset" - перезапишет значение атрибута, "inset" - добавит value к текущему значению атрибута
+    //elements - элементы к которым нужно применить данный метод
+    //++
     attr: function(attribut, value = null, type = "reset", elements = this) {
-        //если занчение для отрибута не указано то просто возвращаем текущее значение атрибута в виде строки
+        //если занчение для атрибута не указано то просто возвращаем текущее значение атрибута в виде строки
         if (value === null) {
-            return elements[0].getAttribute(attribut);
+            return elements[0].getAttribute(attribut);//возвращаем значение атрибута элемента, или первого из объекта с элементами
         }
-        //если занчение для отрибута не указано то просто возвращаем текущее значение атрибута в виде строки   
+        //если занчение для атрибута не указано то просто возвращаем текущее значение атрибута в виде строки   
 
+        //перебираем все элементы у которых нжно произвести операции с атрибутами
         for (let i = 0; i < elements.length; i++) {
-
-            //удаляем атрибут у всех переданных элементов в объекте
-            if (value === "") {
-                elements[i].removeAttribute(attribut);
-                continue; //пропускаем и переходим к следующей итерации по циклу
-            }
 
             //перезапись атрибута со значением
             if (type === "reset") {
@@ -207,23 +269,13 @@ const KSN_jQuery = {
 
             //дополняем заначение атрибута
             if (type === "inset") {
-                let class_data = elements[i].getAttribute(attribut);
-                elements[i].setAttribute(attribut, class_data + " " + value);
+                let attr_data = elements[i].getAttribute(attribut);//текущее значение атрибута
+                attr_data ? elements[i].setAttribute(attribut, attr_data + " " + value) : elements[i].setAttribute(attribut, value);//если у атрибута уже было какое-то начение то объединяем их если не было то просто записываем новое чтоб избежать "null value"
             }
+            //дополняем заначение атрибута
         }
+        //перебираем все элементы у которых нжно произвести операции с атрибутами
 
-        return this; //возвращаем объект this
-    },
-
-    //удаляем атрибут
-    removeAttr: function(attributs, elements = this) {
-        let attrs = this.string_to_array(attributs); //преобрзуем строковый список в масив
-
-        for (let b = 0; b < attrs.length; b++) {
-            for (let i = 0; i < elements.length; i++) {
-                elements[i].removeAttribute(attrs[b]);
-            }
-        }
         return this; //возвращаем объект this
     },
 
@@ -293,6 +345,10 @@ const KSN_jQuery = {
     focus: function(scrolling = false, elements = this) {
         elements[0].focus({ preventScroll: scrolling }); //вокусируемся на элементе
         return this; //возвращаем объект this 
+    },
+
+    blur: function() {
+
     },
 
     //внутренняя функция возвращает объект с данным width padding border margin переданного элемента для его ширины или высоты
@@ -577,7 +633,7 @@ const KSN_jQuery = {
             //если задан селектор для фильтрации соседей на выходе
             if (selector) {
                 temp_arr = this.return_cleaned_of_values(this, temp_arr); //удаляем из временного объекта сам итерируемый этемент, так как мы ищем его сосдей, а не его самого
-                filter_elements = this.return_skleniy_arr(filter_elements, this.return_selectors_obj(selector, parent)); //записываем в массив с элементами для фильтра все удовлетворяющие selector элементы найденные в его прямом родительском элементе
+                filter_elements = this.return_skleniy_arr(filter_elements, this.return_selectors_arr(selector, parent)); //записываем в массив с элементами для фильтра все удовлетворяющие selector элементы найденные в его прямом родительском элементе
             }
             //если задан селектор для фильтрации соседей на выходе
 
@@ -603,7 +659,7 @@ const KSN_jQuery = {
 
             //если задан силектор для фильтрации прямых потомков на выходе
             if (selector) {
-                filter_elements = this.return_skleniy_arr(filter_elements, this.return_selectors_obj(selector, this[0])); //записываем в массив с элементами для фильтра все удовлетворяющие selector элементы
+                filter_elements = this.return_skleniy_arr(filter_elements, this.return_selectors_arr(selector, this[0])); //записываем в массив с элементами для фильтра все удовлетворяющие selector элементы
             }
             //если задан силектор для фильтрации прямых потомков на выходе
         });
@@ -620,7 +676,7 @@ const KSN_jQuery = {
 
         //перебираем объект this
         for (let i = 0; i < elements.length; i++) {
-            let item = this.return_selectors_obj(selector, elements[i]); //найденый элемент
+            let item = this.return_selectors_arr(selector, elements[i]); //найденый элемент
 
             //если элемента по selector-у найден тозаписываем его в конец массива
             if (item) {
@@ -644,7 +700,7 @@ const KSN_jQuery = {
 
         //если задан селектор для отбора
         if (selector) {
-            let all_selectors = this.return_selectors_obj(selector), //объект со всеми элементами удовлетворяющими селектор selector
+            let all_selectors = this.return_selectors_arr(selector), //объект со всеми элементами удовлетворяющими селектор selector
                 filter_result = this.return_clone_elements_arr(result, all_selectors); //получаем массив в который будут записаны одинаковые занчения найденные в массивах result и all_selectors
             return this.output(filter_result); //возвращаем объект с отфильтрованными родительскими элементами
         }
@@ -705,13 +761,13 @@ const KSN_jQuery = {
 
         //если нашли
         if (el) {
-            return this.output([el].slice()) //возвращаем объект сформированный на основе массиа созданного с единственным элементом el
+            return this.construct_new_ksn([el].slice()) //возвращаем объект сформированный на основе массиа созданного с единственным элементом el
         }
         //если нашли
 
         //если не нашли
         else {
-            return this.output([]); //возвращаем объект сформированный на основе пустого объекта
+            return this.construct_new_ksn(); //возвращаем объект сформированный на основе пустого объекта
         }
         //если не нашли
     },
@@ -734,30 +790,23 @@ const KSN_jQuery = {
 
 //функция инициализирует первый поиск по selector-у и возвращает сформированный объект obj с прототипом KSN_jQuery
 function $(selector = null) {
-    let obj = KSN_instens; //создаём новый объект obj с прототипом KSN_jQuery
-
-    //если селектор $(""), $(null), $(undefined), $(false)
-    if (!selector) {
-        return obj; //возвращаем наш объект obj
-    }
-    //если селектор $(""), $(null), $(undefined), $(false)
-
-    //для текстовых сетекторов "#test, .class_test>div.tested, header, a[href='/wefewf/ewf']"
-    if (typeof selector === "string") {
-        return obj.return_selectors_obj(selector); //возвращаем наш объект obj с прототипом KSN_jQuery и всеми элементами найдеными по селекторам
-    }
-    //для текстовых сетекторов ".class_test>div.tested"
-
-    //для сетекторов типа DOMElement таких как window, document...
-    obj[0] = selector; //записываем объект DOMElement
-    obj.length = 1;
-    return obj; //возвращаем наш объект obj с прототипом KSN_jQuery
-    //для сетекторов типа DOMElement таких как window, document...
-
+    let obj = Object.create(KSN_jQuery); //создаём пустой объект с прототипом KSN_jQuery
+    return obj.init(selector); //инициализируем, возвращаем наш объект obj с прототипом KSN_jQuery и всеми элементами найдеными по селекторам
 }
 //функция инициализирует первый поиск по selector-у и возвращает сформированный объект obj с прототипом KSN_jQuery
 
-let KSN_instens = Object.create(KSN_jQuery);
+
+
+
+
+//console.log(jQuery("div.header_search_button").siblings("nav"))
+
+
+
+
+
+
+
 
 
 

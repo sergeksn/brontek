@@ -151,7 +151,7 @@ var
 
 	// Define a local copy of jQuery
 	jQuery = function( selector, context ) {
-
+		//console.log("jQuery")
 		// The jQuery object is actually just the init constructor 'enhanced'
 		// Need init if jQuery is called (just allow error to be thrown if not included)
 		return new jQuery.fn.init( selector, context );
@@ -190,6 +190,7 @@ jQuery.fn = jQuery.prototype = {
 
 		// Build a new jQuery matched element set
 		var ret = jQuery.merge( this.constructor(), elems );
+
 		// Add the old object onto the stack (as a reference)
 		ret.prevObject = this;
 
@@ -417,7 +418,6 @@ jQuery.extend( {
 	// Support: Android <=4.0 only, PhantomJS 1 only
 	// push.apply(_, arraylike) throws on ancient WebKit
 	merge: function( first, second ) {
-		
 		var len = +second.length,
 			j = 0,
 			i = first.length;
@@ -753,7 +753,6 @@ try {
 }
 
 function Sizzle( selector, context, results, seed ) {
-
 	var m, i, elem, nid, match, groups, newSelector,
 		newContext = context && context.ownerDocument,
 
@@ -771,7 +770,6 @@ function Sizzle( selector, context, results, seed ) {
 
 	// Try to shortcut find operations (as opposed to filters) in HTML documents
 	if ( !seed ) {
-
 		setDocument( context );
 		context = context || document;
 
@@ -780,6 +778,7 @@ function Sizzle( selector, context, results, seed ) {
 			// If the selector is sufficiently simple, try using a "get*By*" DOM method
 			// (excepting DocumentFragment context, where the methods don't exist)
 			if ( nodeType !== 11 && ( match = rquickExpr.exec( selector ) ) ) {
+
 				// ID selector
 				if ( ( m = match[ 1 ] ) ) {
 
@@ -815,7 +814,6 @@ function Sizzle( selector, context, results, seed ) {
 
 				// Type selector
 				} else if ( match[ 2 ] ) {
-
 					push.apply( results, context.getElementsByTagName( selector ) );
 					return results;
 
@@ -877,11 +875,9 @@ function Sizzle( selector, context, results, seed ) {
 				}
 
 				try {
-
 					push.apply( results,
 						newContext.querySelectorAll( newSelector )
 					);
-
 					return results;
 				} catch ( qsaError ) {
 					nonnativeSelectorCache( selector, true );
@@ -1127,7 +1123,6 @@ isXML = Sizzle.isXML = function( elem ) {
  * @returns {Object} Returns the current document
  */
 setDocument = Sizzle.setDocument = function( node ) {
-
 	var hasCompare, subWindow,
 		doc = node ? node.ownerDocument || node : preferredDoc;
 
@@ -1209,16 +1204,13 @@ setDocument = Sizzle.setDocument = function( node ) {
 
 	// ID filter and find
 	if ( support.getById ) {
-
 		Expr.filter[ "ID" ] = function( id ) {
-
 			var attrId = id.replace( runescape, funescape );
 			return function( elem ) {
 				return elem.getAttribute( "id" ) === attrId;
 			};
 		};
 		Expr.find[ "ID" ] = function( id, context ) {
-
 			if ( typeof context.getElementById !== "undefined" && documentIsHTML ) {
 				var elem = context.getElementById( id );
 				return elem ? [ elem ] : [];
@@ -3083,7 +3075,6 @@ jQuery.filter = function( expr, elems, not ) {
 
 jQuery.fn.extend( {
 	find: function( selector ) {
-
 		var i, ret,
 			len = this.length,
 			self = this;
@@ -3097,6 +3088,7 @@ jQuery.fn.extend( {
 				}
 			} ) );
 		}
+
 		ret = this.pushStack( [] );
 
 		for ( i = 0; i < len; i++ ) {
@@ -3140,7 +3132,7 @@ var rootjQuery,
 
 	init = jQuery.fn.init = function( selector, context, root ) {
 		var match, elem;
-		
+
 		// HANDLE: $(""), $(null), $(undefined), $(false)
 		if ( !selector ) {
 			return this;
@@ -3152,7 +3144,6 @@ var rootjQuery,
 
 		// Handle HTML strings
 		if ( typeof selector === "string" ) {
-
 			if ( selector[ 0 ] === "<" &&
 				selector[ selector.length - 1 ] === ">" &&
 				selector.length >= 3 ) {
@@ -3163,6 +3154,7 @@ var rootjQuery,
 			} else {
 				match = rquickExpr.exec( selector );
 			}
+
 			// Match html or make sure no context is specified for #id
 			if ( match && ( match[ 1 ] || !context ) ) {
 
@@ -6779,6 +6771,7 @@ function getWidthOrHeight( elem, dimension, extra ) {
 
 	// Start with computed style
 	var styles = getStyles( elem ),
+	
 		// To avoid forcing a reflow, only fetch boxSizing if we need it (gh-4322).
 		// Fake content-box until we know it's needed to know the true value.
 		boxSizingNeeded = !support.boxSizingReliable() || extra,
@@ -6788,6 +6781,7 @@ function getWidthOrHeight( elem, dimension, extra ) {
 
 		val = curCSS( elem, dimension, styles ),
 		offsetProp = "offset" + dimension[ 0 ].toUpperCase() + dimension.slice( 1 );
+
 	// Support: Firefox <=54
 	// Return a confounding non-pixel value or feign ignorance, as appropriate.
 	if ( rnumnonpx.test( val ) ) {
@@ -7013,7 +7007,6 @@ jQuery.extend( {
 } );
 
 jQuery.each( [ "height", "width" ], function( _i, dimension ) {
-
 	jQuery.cssHooks[ dimension ] = {
 		get: function( elem, computed, extra ) {
 			if ( computed ) {
@@ -10649,7 +10642,7 @@ jQuery.each( [ "top", "left" ], function( _i, prop ) {
 jQuery.each( { Height: "height", Width: "width" }, function( name, type ) {
 	jQuery.each( { padding: "inner" + name, content: type, "": "outer" + name },
 		function( defaultExtra, funcName ) {
-		
+
 		// Margin is only for outerHeight, outerWidth
 		jQuery.fn[ funcName ] = function( margin, value ) {
 			var chainable = arguments.length && ( defaultExtra || typeof margin !== "boolean" ),
@@ -10659,6 +10652,7 @@ jQuery.each( { Height: "height", Width: "width" }, function( name, type ) {
 				var doc;
 
 				if ( isWindow( elem ) ) {
+
 					// $( window ).outerWidth/Height return w/h including scrollbars (gh-1729)
 					return funcName.indexOf( "outer" ) === 0 ?
 						elem[ "inner" + name ] :
