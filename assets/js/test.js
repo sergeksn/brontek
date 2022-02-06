@@ -2,12 +2,38 @@
 
 jQuery.noConflict();
 
+var $ = function(selector) {
+    return new $.init(selector);
+}
+
+$.init = function(selector) {
+    //если селектор $(""), $(null), $(undefined), $(false)
+    if (!selector) {
+        return this; //возвращаем наш объект obj
+    }
+    //если селектор $(""), $(null), $(undefined), $(false)
+
+    //для текстовых сетекторов "#test, .class_test>div.tested, header, a[href='/wefewf/ewf']"
+    if (typeof selector === "string") {
+        return this.return_selectors_obj(selector); //возвращаем наш объект obj с прототипом KSN_jQuery и всеми элементами найдеными по селекторам
+    }
+    //для текстовых сетекторов ".class_test>div.tested"
+
+    //для сетекторов типа DOMElement таких как window, document...
+    this[0] = selector; //записываем объект DOMElement
+    this.length = 1;
+    return this; //возвращаем наш объект obj с прототипом KSN_jQuery
+    //для сетекторов типа DOMElement таких как window, document...
+}
+
 //объект с основными функциями
-const KSN_jQuery = {
+$.init.prototype = {
+    constructor: $,
+    version: "1.0",
+    length: 0,
     //фнкция возвращает новый объект внеся в него все элементы из elements и его длинну length используя в качестве своего прототипа KSN_jQuery объект
     output: function(elements = []) {
-        //console.log(KSN_instens)
-        let obj = KSN_instens; //создаём объект obj с прототипом KSN_jQuery
+        let obj = this; //создаём объект obj с прототипом KSN_jQuery
 
 
         //если передан просто узел DOM его нужно преобразовать в итерируемый элемент
@@ -74,6 +100,7 @@ const KSN_jQuery = {
             if (proverka) {
                 //id
                 if (selector.includes("#")) {
+                    //result.push(element_fo_search.getElementById(selector))
                     result = this.return_skleniy_arr(result, [element_fo_search.getElementById(selector.slice(1))]);
                 }
                 //id
@@ -94,6 +121,7 @@ const KSN_jQuery = {
 
             //если сложный селектор
             else {
+                //result.push(element_fo_search.querySelectorAll(selector))
                 result = this.return_skleniy_arr(result, element_fo_search.querySelectorAll(selector));
             }
             //если сложный селектор
@@ -132,10 +160,10 @@ const KSN_jQuery = {
     //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект содержащий все элементы обеих массивов
     //clone_clean - если true то вернёт массив без одинаковых значений
     return_skleniy_arr: function(arr_1, arr_2, clone_clean = true) {
-        let result = [];//массив в который будем записывать все элементы
-        result.push.apply(result, arr_1);//записываем данные из arr_1
-        result.push.apply(result, arr_2);//записываем данные из arr_2
-        return clone_clean ? this.return_no_clone_arr(result) : result;
+        let massiv_1 = Array.isArray(arr_1) ? arr_1 : this.toArray(arr_1), //если вдруг это не массив то преобразуем в массив
+            massiv_2 = Array.isArray(arr_2) ? arr_2 : this.toArray(arr_2), //если вдруг это не массив то преобразуем в массив
+            result = massiv_1.concat(massiv_2); //объединяем два массива с помощью встроенного метода массивов concat
+        return clone_clean ? this.return_no_clone_arr(result) : this.output(result);
     },
     //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект содержащий все элементы обеих массивов
 
@@ -144,7 +172,7 @@ const KSN_jQuery = {
         //let result = this.toArray(new Set(arr));//здесь применяется метод set который возвращает только уникальные значения
         let massiv = Array.isArray(arr) ? arr : this.toArray(arr), //если вдруг это не массив то преобразуем в массив
             result = massiv.filter((item, index) => { return massiv.indexOf(item) === index }); //с помошью фильтрующего метода Array возвращаем массив в котором будт только элементы удовлетворяющие условию massiv.indexOf(item) === index, т.е. если будет повторяющееся значение его индекс будет равен не его индексу , а первому такому элементу в массиве, следовательно этот элемент повторно не будет включаться
-        return result;
+        return this.output(result);
     },
     //получает на вход массив (массивоподобный объект), после этого удаляет в нём одинаковые значения и возвращает результирующий объект с новой длинной
 
@@ -258,7 +286,7 @@ const KSN_jQuery = {
         return this; //возвращаем объект this 
     },
 
-    //проверяет наличее классов
+    //проверяет насличее классов
     hasClass: function(class_name, elements = this) {
         let classes = this.string_to_array(class_name), //преобрзуем строковый список в масив
             result; //результат проверки
@@ -734,7 +762,7 @@ const KSN_jQuery = {
 
 //функция инициализирует первый поиск по selector-у и возвращает сформированный объект obj с прототипом KSN_jQuery
 function $(selector = null) {
-    let obj = KSN_instens; //создаём новый объект obj с прототипом KSN_jQuery
+    let obj = Object.create(KSN_jQuery); //создаём новый объект obj с прототипом KSN_jQuery
 
     //если селектор $(""), $(null), $(undefined), $(false)
     if (!selector) {
@@ -757,11 +785,16 @@ function $(selector = null) {
 }
 //функция инициализирует первый поиск по selector-у и возвращает сформированный объект obj с прототипом KSN_jQuery
 
-let KSN_instens = Object.create(KSN_jQuery);
 
 
 
 
+
+
+
+
+//console.log(ksn.fn.init())
+//console.log(ksn("#idishnik"))
 //console.log($(".header_menu_item, nav, body, header a[href='#'],#test"))
 
 

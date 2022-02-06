@@ -164,11 +164,14 @@
 <!--<script src="/assets/js/jquery.min.js"></script>
 <script src="/assets/js/main.js"></script>-->
 <script>
-    let kol = 10000;
+    let kol = 100000;
     function ksn_spead_test(){
         let time_start = new Date().getTime();
         for(let i = 0; i < kol; i++){
-            $("#idishnik")
+            //$("#idishnik")
+            //$("#idishnik").addClass("test")
+            //$("#idishnik").hasClass("test")
+            $("a.test_wf.data_2_tess#idishnik.thri_cl")
         }
         let time_finish = new Date().getTime(),
             result = (time_finish - time_start)/1000;
@@ -178,20 +181,42 @@
     function jQuery_spead_test(){
         let time_start = new Date().getTime();
         for(let i = 0; i < kol; i++){
-            jQuery("#idishnik")
+            //jQuery("#idishnik")
+            //jQuery("#idishnik").addClass("test")
+            //jQuery("#idishnik").hasClass("test")
+            jQuery("a.test_wf.data_2_tess#idishnik.thri_cl")
         }
         let time_finish = new Date().getTime(),
             result = (time_finish - time_start)/1000;
         console.log(result+" сек")
     }
 
+    function test_clean(selektor){
+        let time_start = new Date().getTime();
+        for(let i = 0; i < kol; i++){
+            document.querySelectorAll(selektor)
+        }
+        let time_finish = new Date().getTime(),
+            result = (time_finish - time_start)/1000;
+        console.log(result+" сек")
+    }
+
+    console.log($("a.test_wf.data_2_tess#idishnik.thri_cl"))
+    console.log($("div.header_menu_item"))
+
+    //ksn_spead_test()
+    //jQuery_spead_test()
+    //test_clean("a.test_wf.data_2_tess#idishnik.thri_cl")
 
 
-    ksn_spead_test()
-    jQuery_spead_test()
+    //console.log($("a,  a.data_2_tess.thri_cl#idishnik.test_wf,    div.search_wrapper, #idishnik, .header_menu_item,    a.test_wf#idishnik, #idishnik.test_wf, a#idishnik.data_2_tess.test_wf, header"))
 
-    console.log($("a"))
-    console.log(jQuery("a"))
+    //$("a.test_wf.data_2_tess#idishnik.thri_cl")
+
+    //$("#idishnik")
+
+    //console.log($("a"))
+    //console.log(jQuery("a"))
 
     //("a,  a.data_2_tess.thri_cl#idishnik.test_wf,    div.search_wrapper, #idishnik, .header_menu_item,    a.test_wf#idishnik, #idishnik.test_wf, a#idishnik.data_2_tess.test_wf, header")
 

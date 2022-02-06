@@ -3140,7 +3140,7 @@ var rootjQuery,
 
 	init = jQuery.fn.init = function( selector, context, root ) {
 		var match, elem;
-
+		
 		// HANDLE: $(""), $(null), $(undefined), $(false)
 		if ( !selector ) {
 			return this;
