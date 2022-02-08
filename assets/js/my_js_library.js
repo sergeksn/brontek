@@ -1,66 +1,138 @@
 "use strict"; //используем современный режим
 
-jQuery.noConflict();
+//ПРИМЕЧАНИЕ: скорость работы моей библиотеки в общем выше чем у jQuery, для примера данная операция в 100000 (сто тысяч) повторений
+//$("header").find("div").parents("div").children("div").siblings("nav, a, div.top_banner, .header_cart")
+//на ksn заняла 24.3 сек
+//на jQuery заняла 35.053 сек
+//что на 30% быстрее
+
+if (typeof window.jQuery !== "undefined") { jQuery.noConflict(); } //на всякий случай если вдруг подключена jQuery, чтоб не конфликтовали
 
 //объект с основными функциями
-const KSN_jQuery = {
-    //метод инициализации, ищет все подходящие селекторы и возвращает результат в виде объекта с прототипом KSN_jQuery
-    init: function(selector) {
-        let obj = this; //объект с прототипом KSN_jQuery
 
-        //если селектор $(""), $(null), $(undefined), $(false)
-        if (!selector) {
-            return obj; //возвращаем наш объект obj
-        }
-        //если селектор $(""), $(null), $(undefined), $(false)
+//базовые функции для работы
+//bf - base functions
+let bf = {
+    //преобразует строку в массив разделитель separator
+    //++
+    string_to_array: function(string, separator = " ") {
+        return string.split(separator); //возвращаем массив
+    },
 
-        //для текстовых сетекторов "#test, .class_test>div.tested, header, a[href='/wefewf/ewf']"
-        if (typeof selector === "string") {
-            let elements = this.return_selectors_arr(selector); //возвращаем все найденые элементы в виде массива
+    //преобразуем массивоподобные объекты в separator
+    //++
+    toArray: function(data) {
+        return Array.from(data);
+    },
+    //преобразуем массивоподобные объекты в массивы
 
-            //перебираем все элементы elements и записываем их по порядку в объект obj
-            for (let i = 0; i < elements.length; i++) {
-                obj[i] = elements[i];
+    //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект в котором будут только те элементы которые встречаются в обоих массивах
+    //clone_clean - если true то вернёт массив без одинаковых значений
+    return_clone_elements_arr: function(arr_1, arr_2, clone_clean = true) {
+        let massiv_1 = Array.isArray(arr_1) ? arr_1 : this.toArray(arr_1), //если вдруг это не массив то преобразуем в массив
+            massiv_2 = Array.isArray(arr_2) ? arr_2 : this.toArray(arr_2), //если вдруг это не массив то преобразуем в массив
+            //перебираем массив massiv_1 для поиска совпадающих значений с массивом massiv_2
+            result = massiv_1.filter((item, index) => {
+                return massiv_2.indexOf(item) !== -1; //если indexOf вернул не -1 то функция вернёт true и текущий элемнт будет добавлен в массив result так как он присутствует в обоих массивах
+            });
+        //перебираем массив massiv_1 для поиска совпадающих значений с массивом massiv_2
+
+        return clone_clean ? this.return_no_clone_arr(result) : result; //удаляем повоторяющиеся элементы и возвращаем новый объект
+    },
+    //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект в котором будут только те элементы которые встречаются в обоих массивах
+
+    //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект содержащий все элементы обеих массивов
+    //clone_clean - если true то вернёт массив без одинаковых значений
+    //result = [] массив в который будем записывать все элементы
+    return_skleniy_arr: function(arr_1, arr_2, clone_clean = true, result = []) {
+        result.push.apply(result, arr_1); //записываем данные из arr_1
+        result.push.apply(result, arr_2); //записываем данные из arr_2
+        return clone_clean ? this.return_no_clone_arr(result) : result;
+    },
+    //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект содержащий все элементы обеих массивов
+
+    //получает на вход массив (массивоподобный объект), после этого удаляет в нём одинаковые значения и возвращает результирующий объект с новой длинной
+    return_no_clone_arr: function(arr) {
+        //let result = this.toArray(new Set(arr));//здесь применяется метод set который возвращает только уникальные значения
+        let massiv = Array.isArray(arr) ? arr : this.toArray(arr), //если вдруг это не массив то преобразуем в массив
+            result = massiv.filter((item, index) => { return massiv.indexOf(item) === index }); //с помошью фильтрующего метода Array возвращаем массив в котором будт только элементы удовлетворяющие условию massiv.indexOf(item) === index, т.е. если будет повторяющееся значение его индекс будет равен не его индексу , а первому такому элементу в массиве, следовательно этот элемент повторно не будет включаться
+        return result;
+    },
+    //получает на вход массив (массивоподобный объект), после этого удаляет в нём одинаковые значения и возвращает результирующий объект с новой длинной
+
+    //очищает массив arr от значений values
+    return_cleaned_of_values: function(values, arr) {
+        let cleaned = Array.isArray(values) ? values : this.toArray(values), //если вдруг это не массив то преобразуем в массив
+            massiv = Array.isArray(arr) ? arr : this.toArray(arr), //если вдруг это не массив то преобразуем в массив
+            result = massiv.filter((item) => !cleaned.includes(item));
+        //result = massiv.filter((item) => { return cleaned.indexOf(item) < 0 });тоже самое но с помощью метода indexOf
+        return result;
+    },
+    //очищает массив arr от значений values
+
+    //внутренняя функция возвращает объект с данным width padding border margin переданного элемента для его ширины или высоты
+    getWidthOrHeight: function(element, dimension) {
+        if (dimension === "width") {
+            let padding_left = window.getComputedStyle(element).paddingLeft,
+                padding_right = window.getComputedStyle(element).paddingRight,
+                padding_lr = Number(padding_left.replace("px", "")) + Number(padding_right.replace("px", "")), //общая ширина padding
+                border_left = window.getComputedStyle(element).borderLeftWidth,
+                border_right = window.getComputedStyle(element).borderRightWidth,
+                border_lr = Number(border_left.replace("px", "")) + Number(border_right.replace("px", "")), //общая ширина border
+                margin_left = window.getComputedStyle(element).marginLeft,
+                margin_right = window.getComputedStyle(element).marginRight,
+                margin_lr = Number(margin_left.replace("px", "")) + Number(margin_right.replace("px", "")), //общая ширина margin
+                width = element.offsetWidth - padding_lr - border_lr;
+            return {
+                "width": width,
+                "padding": padding_lr,
+                "border": border_lr,
+                "margin": margin_lr
             }
-            //перебираем все элементы elements и записываем их по порядку в объект obj
-
-            obj.length = elements.length; //записываем в коне количество элементов объекта объекта length
-
-            return obj; //возвращаем наш объект obj с прототипом KSN_jQuery и всеми элементами найдеными по селекторам
+        } else if (dimension === "height") {
+            let padding_top = window.getComputedStyle(element).paddingTop,
+                padding_bottom = window.getComputedStyle(element).paddingBottom,
+                padding_tb = Number(padding_top.replace("px", "")) + Number(padding_bottom.replace("px", "")), //общая ширина padding
+                border_top = window.getComputedStyle(element).borderTopWidth,
+                border_bottom = window.getComputedStyle(element).borderBottomWidth,
+                border_tb = Number(border_top.replace("px", "")) + Number(border_bottom.replace("px", "")), //общая ширина border
+                margin_top = window.getComputedStyle(element).marginTop,
+                margin_bottom = window.getComputedStyle(element).marginBottom,
+                margin_tb = Number(margin_top.replace("px", "")) + Number(margin_bottom.replace("px", "")), //общая ширина margin
+                height = element.offsetHeight - padding_tb - border_tb;
+            return {
+                "height": height,
+                "padding": padding_tb,
+                "border": border_tb,
+                "margin": margin_tb
+            }
         }
-        //для текстовых сетекторов ".class_test>div.tested"
-
-        //для сетекторов типа DOMElement таких как window, document...
-        obj[0] = selector; //записываем объект DOMElement
-        obj.length = 1;
-        return obj; //возвращаем наш объект obj с прототипом KSN_jQuery
-        //для сетекторов типа DOMElement таких как window, document...
     },
-    //метод инициализации, ищет все подходящие селекторы и возвращает результат в виде объекта с прототипом KSN_jQuery
 
-    //метод создаёт новый объект с прототипом KSN_jQuery, и заполянет его элементами из elements
-    construct_new_ksn: function(elements = null) {
-        //ПРИМЕЧАНИЕ: создать новый объект с заданым прототипом и записать в него занчения намного быстрее чем чистить старый объект, а потом ещё и заполянть его значениями
-        //console.log("$")
-        let obj = Object.create(KSN_jQuery); //создаём объект obj с прототипом KSN_jQuery
-
-        //если ничего не передано для формирования нового объекта, то возвращаем новый объект с длинной в 0
-        if (elements === null) {
-            obj.length = 0;
-            return obj;
+    //функция для получения высот и ширин таких элементов как window и document
+    //elem - передаваемый объект window или document
+    //name - Width / Height
+    //target_property - свойство которое нужно получить, outerHeight к примеру
+    win_doc_wh: function(elem, name, target_property) {
+        if (elem === window) {
+            return target_property.indexOf("outer") === 0 ?
+                elem["inner" + name] :
+                elem.document.documentElement["client" + name];
         }
-        //если ничего не передано для формирования нового объекта, то возвращаем новый объект с длинной в 0
+        //если это document
+        if (elem.nodeType === 9) {
+            let doc = elem.documentElement;
 
-        //перебираем все элементы elements и записываем их по порядку в объект obj
-        for (let i = 0; i < elements.length; i++) {
-            obj[i] = elements[i];
+            return Math.max(
+                elem.body["scroll" + name], doc["scroll" + name],
+                elem.body["offset" + name], doc["offset" + name],
+                doc["client" + name]
+            );
         }
 
-        obj.length = elements.length; //записываем в коне количество элементов объекта объекта length
-
-        return obj; //возвращаем наш объект obj
+        return false;
     },
-    //метод создаёт новый объект с прототипом KSN_jQuery, и заполянет его элементами из elements
+    //функция для получения высот и ширин таких элементов как window и document
 
     //возвращает массив состоящий из всех элементов найденых по селекстором через запятую, примечательно что будет использован оптимальный поиск по дереву DOM для каждого типа селектора
     //selectors - строка в виде селекторов, можно несколько перечисленных через запятую, к примеру: ".test, a.web, header, nav"
@@ -122,59 +194,136 @@ const KSN_jQuery = {
     },
     //возвращает массив состоящий из всех элементов найденых по селекстором через запятую, примечательно что будет использован оптимальный поиск по дереву DOM для каждого типа селектора
 
-    //преобразует строку в массив разделитель пробел
-    string_to_array: function(string, separator = " ") {
-        return string.split(separator); //возвращаем массив
-    },
+    //создаёт новый куки
+    //name - имя записываемого куки
+    //value - значение записываемого кукки
+    //options - параметры для записываемых куки
+    setCookie: function(name, value, options = {
+        //path: '/', //базовый путь по которому куки будут доступны
+        //domain: "site.com",//домен дял которого будут действовать куки
+        //expires: "Tue, 19 Jan 2038 03:14:07 GMT",//дата истечения куки
+        //"max-age": "604800", //устанавливает время действия куки в секундах, по умолчанию 7 дней
+        //secure: true //куки будут переданы толкьо по HTTPS протоколу
+    }) {
 
-    //преобразуем массивоподобные объекты в массивы
-    toArray: function(data) {
-        return Array.from(data);
-    },
+        name = decodeURIComponent(name);//получаем "uswvewvc vw vw vweer" из "uswvewvc%20vw%20vw%20vweer" или "uswvewvc vw vw vweer" из "uswvewvc vw vw vweer"
+        name = encodeURIComponent(name);//получаем "uswvewvc%20vw%20vw%20vweer" из "uswvewvc vw vw vweer"
 
-    //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект в котором будут только те элементы которые встречаются в обоих массивах
-    //clone_clean - если true то вернёт массив без одинаковых значений
-    return_clone_elements_arr: function(arr_1, arr_2, clone_clean = true) {
-        let massiv_1 = Array.isArray(arr_1) ? arr_1 : this.toArray(arr_1), //если вдруг это не массив то преобразуем в массив
-            massiv_2 = Array.isArray(arr_2) ? arr_2 : this.toArray(arr_2), //если вдруг это не массив то преобразуем в массив
-            //перебираем массив massiv_1 для поиска совпадающих значений с массивом massiv_2
-            result = massiv_1.filter((item, index) => {
-                return massiv_2.indexOf(item) !== -1; //если indexOf вернул не -1 то функция вернёт true и текущий элемнт будет добавлен в массив result так как он присутствует в обоих массивах
-            });
-        //перебираем массив massiv_1 для поиска совпадающих значений с массивом massiv_2
+        if(!options.path){options.path = '/';}//если явно не задан адрес дял которого работает куки то делаем его доступным для всего сайта
 
-        return clone_clean ? this.return_no_clone_arr(result) : this.output(result); //удаляем повоторяющиеся элементы и возвращаем новый объект
-    },
-    //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект в котором будут только те элементы которые встречаются в обоих массивах
+        //проверим соответсвует парметр expires объекта options формату даты unix
+        if (options.expires instanceof Date) {
+            options.expires = options.expires.toUTCString(); //преобразуем значение expires в формат Mon, 03 Jul 2006 21:44:38 GMT
+        }
+        //проверим соответсвует парметр expires объекта options формату даты unix
 
-    //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект содержащий все элементы обеих массивов
-    //clone_clean - если true то вернёт массив без одинаковых значений
-    return_skleniy_arr: function(arr_1, arr_2, clone_clean = true) {
-        let result = []; //массив в который будем записывать все элементы
-        result.push.apply(result, arr_1); //записываем данные из arr_1
-        result.push.apply(result, arr_2); //записываем данные из arr_2
-        return clone_clean ? this.return_no_clone_arr(result) : result;
-    },
-    //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект содержащий все элементы обеих массивов
+        let updatedCookie = name + "=" + encodeURIComponent(value); //данные для записи в куки
 
-    //получает на вход массив (массивоподобный объект), после этого удаляет в нём одинаковые значения и возвращает результирующий объект с новой длинной
-    return_no_clone_arr: function(arr = this) {
-        //let result = this.toArray(new Set(arr));//здесь применяется метод set который возвращает только уникальные значения
-        let massiv = Array.isArray(arr) ? arr : this.toArray(arr), //если вдруг это не массив то преобразуем в массив
-            result = massiv.filter((item, index) => { return massiv.indexOf(item) === index }); //с помошью фильтрующего метода Array возвращаем массив в котором будт только элементы удовлетворяющие условию massiv.indexOf(item) === index, т.е. если будет повторяющееся значение его индекс будет равен не его индексу , а первому такому элементу в массиве, следовательно этот элемент повторно не будет включаться
-        return result;
-    },
-    //получает на вход массив (массивоподобный объект), после этого удаляет в нём одинаковые значения и возвращает результирующий объект с новой длинной
+        //перебираем объект options и дописываем в данные для записи в куки
+        for (let optionKey in options) {
+            updatedCookie += "; " + optionKey;
+            let optionValue = options[optionKey];
+            if (optionValue !== true) {
+                updatedCookie += "=" + optionValue;
+            }
+        }
+        //перебираем объект options и дописываем в данные для записи в куки
 
-    //очищает массив arr от значений values
-    return_cleaned_of_values: function(values, arr = this) {
-        let cleaned = Array.isArray(values) ? values : this.toArray(values), //если вдруг это не массив то преобразуем в массив
-            massiv = Array.isArray(arr) ? arr : this.toArray(arr), //если вдруг это не массив то преобразуем в массив
-            result = massiv.filter((item) => !cleaned.includes(item));
-        //result = massiv.filter((item) => { return cleaned.indexOf(item) < 0 });тоже самое но с помощью метода indexOf
-        return this.output(result);
+        document.cookie = updatedCookie; //записываем данные в куки
     },
-    //очищает массив arr от значений values
+    // Пример использования:
+    //setCookie('user', 'John', { secure: true, 'max-age': 3600 });
+    //создаёт новый куки
+
+    // возвращает куки с указанным name или undefined, если ничего не найдено
+    //name - имя куки значение которого нужно получить
+    getCookie: function(name) {
+        //может быть передано значение как "uswvewvc%20vw%20vw%20vweer" так и "uswvewvc vw vw vweer" , по этому сначало декодируем в строку с пробелами, а потом кодируем с заменой на соответствующие символы, тем самым мы получим надёжный вывод вне зависимости от того как запросился куки
+        name = decodeURIComponent(name);//получаем "uswvewvc vw vw vweer" из "uswvewvc%20vw%20vw%20vweer" или "uswvewvc vw vw vweer" из "uswvewvc vw vw vweer"
+        name = encodeURIComponent(name);//получаем "uswvewvc%20vw%20vw%20vweer" из "uswvewvc vw vw vweer"
+
+        let matches = document.cookie.match(new RegExp(
+            "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
+        ));
+
+        return matches ? decodeURIComponent(matches[1]) : undefined;
+    },
+    // возвращает куки с указанным name или undefined, если ничего не найдено
+
+    //удаляем куки по имени
+    //name - имя куки который нужно удалить
+    deleteCookie: function(name) {
+        this.setCookie(name, "", {
+            'max-age': -1
+        })
+    },
+    //удаляем куки по имени
+}
+//базовые функции для работы
+
+//функция инициализирует первый поиск по selector-у и возвращает сформированный объект obj с прототипом KSN_jQuery
+let ksn = function(selector = null) {
+    let obj = Object.create(KSN_jQuery); //создаём пустой объект с прототипом KSN_jQuery
+    return obj.init(selector); //инициализируем, возвращаем наш объект obj с прототипом KSN_jQuery и всеми элементами найдеными по селекторам
+}
+//функция инициализирует первый поиск по selector-у и возвращает сформированный объект obj с прототипом KSN_jQuery
+
+const KSN_jQuery = {
+    //метод инициализации, ищет все подходящие селекторы и возвращает результат в виде объекта с прототипом KSN_jQuery
+    //obj - объект с прототипом KSN_jQuery
+    init: function(selector, obj = this) {
+        //если селектор $(""), $(null), $(undefined), $(false)
+        if (!selector) {
+            return obj; //возвращаем наш объект obj
+        }
+        //если селектор $(""), $(null), $(undefined), $(false)
+
+        //для текстовых сетекторов "#test, .class_test>div.tested, header, a[href='/wefewf/ewf']"
+        if (typeof selector === "string") {
+            let elements = bf.return_selectors_arr(selector); //возвращаем все найденые элементы в виде массива
+
+            //перебираем все элементы elements и записываем их по порядку в объект obj
+            for (let i = 0; i < elements.length; i++) {
+                obj[i] = elements[i];
+            }
+            //перебираем все элементы elements и записываем их по порядку в объект obj
+
+            obj.length = elements.length; //записываем в коне количество элементов объекта объекта length
+
+            return obj; //возвращаем наш объект obj с прототипом KSN_jQuery и всеми элементами найдеными по селекторам
+        }
+        //для текстовых сетекторов ".class_test>div.tested"
+
+        //для сетекторов типа DOMElement таких как window, document...
+        obj[0] = selector; //записываем объект DOMElement
+        obj.length = 1;
+        return obj; //возвращаем наш объект obj с прототипом KSN_jQuery
+        //для сетекторов типа DOMElement таких как window, document...
+    },
+    //метод инициализации, ищет все подходящие селекторы и возвращает результат в виде объекта с прототипом KSN_jQuery
+
+    //метод создаёт новый объект с прототипом KSN_jQuery, и заполянет его элементами из elements
+    //obj - создаём объект obj с прототипом KSN_jQuery
+    construct_new_ksn: function(elements = null, obj = Object.create(KSN_jQuery)) {
+        //ПРИМЕЧАНИЕ: создать новый объект с заданым прототипом и записать в него занчения намного быстрее чем чистить старый объект, а потом ещё и заполянть его значениями
+
+        //если ничего не передано для формирования нового объекта, то возвращаем новый объект с длинной в 0
+        if (elements === null) {
+            obj.length = 0;
+            return obj;
+        }
+        //если ничего не передано для формирования нового объекта, то возвращаем новый объект с длинной в 0
+
+        //перебираем все элементы elements и записываем их по порядку в объект obj
+        for (let i = 0; i < elements.length; i++) {
+            obj[i] = elements[i];
+        }
+
+        obj.length = elements.length; //записываем в коне количество элементов объекта объекта length
+
+        return obj; //возвращаем наш объект obj
+    },
+    //метод создаёт новый объект с прототипом KSN_jQuery, и заполянет его элементами из elements
 
     //производит итерации над объектами и для каждого итирируемого элемента объекта вызиывает функцию callback
     //arg_1 - объект или функция
@@ -184,7 +333,7 @@ const KSN_jQuery = {
         let obj = typeof arg_1 === "function" ? this : arg_1, //если в arg_1 передана функция то obj будет this
             callback = typeof arg_1 === "function" ? arg_1 : arg_2; //если в arg_1 передана функция то callback будет arg_1
 
-        obj = Array.isArray(obj) ? obj : this.toArray(obj); //преобразуем в массив для итераций если нужно
+        obj = Array.isArray(obj) ? obj : bf.toArray(obj); //преобразуем в массив для итераций если нужно
 
         //перебираем массив с итерируемыми элементами
         for (let i = 0; i < obj.length; i++) {
@@ -201,7 +350,7 @@ const KSN_jQuery = {
     //callback - функция которую нужно вызвать при срабатывании события из строки event, можно указать название функции, пример: touch_menu_open_close ; или указать функцию, пример: function(){console.log("Выполняем что-то, при срабатывании события из массива event")}
     //options_event - сюда нужно передать объект с обциями для данного слушателя
     on: function(event, callback, options_event = { passive: true }, elements = this) {
-        let events = this.string_to_array(event); //преобрзуем строковый список в масив
+        let events = bf.string_to_array(event); //преобрзуем строковый список в масив
 
         for (let i = 0; i < elements.length; i++) {
             for (let b = 0; b < events.length; b++) {
@@ -215,7 +364,7 @@ const KSN_jQuery = {
     //event - строка событий которые нужно отключить от прослушивания для элемента, пример: "touchend click resize"
     //callback - функция которая должна быть отключена для данных слушателей событий
     off: function(event, callback, elements = this) {
-        let events = this.string_to_array(event); //преобрзуем строковый список в масив
+        let events = bf.string_to_array(event); //преобрзуем строковый список в масив
 
         for (let i = 0; i < elements.length; i++) {
             for (let b = 0; b < events.length; b++) {
@@ -230,13 +379,13 @@ const KSN_jQuery = {
     //elements - один или более элементов атрибуты attributs в которых нужно удалить
     //++
     removeAttr: function(attributs, elements = this) {
-        attributs = this.string_to_array(attributs); //преобрзуем строковый список в массив
+        attributs = bf.string_to_array(attributs); //преобрзуем строковый список в массив
 
         //перебираем атрибуты для удаления
         for (let b = 0; b < attributs.length; b++) {
             //перебираем все элементы у которых нужно удалить атрибуты
             for (let i = 0; i < elements.length; i++) {
-                elements[i].removeAttribute(attributs[b]);//удаляем указаннй трибут у текущего итерируемого элемента
+                elements[i].removeAttribute(attributs[b]); //удаляем указаннй трибут у текущего итерируемого элемента
             }
             //перебираем все элементы у которых нужно удалить атрибуты
         }
@@ -255,7 +404,7 @@ const KSN_jQuery = {
     attr: function(attribut, value = null, type = "reset", elements = this) {
         //если занчение для атрибута не указано то просто возвращаем текущее значение атрибута в виде строки
         if (value === null) {
-            return elements[0].getAttribute(attribut);//возвращаем значение атрибута элемента, или первого из объекта с элементами
+            return elements[0].getAttribute(attribut); //возвращаем значение атрибута элемента, или первого из объекта с элементами
         }
         //если занчение для атрибута не указано то просто возвращаем текущее значение атрибута в виде строки   
 
@@ -269,8 +418,8 @@ const KSN_jQuery = {
 
             //дополняем заначение атрибута
             if (type === "inset") {
-                let attr_data = elements[i].getAttribute(attribut);//текущее значение атрибута
-                attr_data ? elements[i].setAttribute(attribut, attr_data + " " + value) : elements[i].setAttribute(attribut, value);//если у атрибута уже было какое-то начение то объединяем их если не было то просто записываем новое чтоб избежать "null value"
+                let attr_data = elements[i].getAttribute(attribut); //текущее значение атрибута
+                attr_data ? elements[i].setAttribute(attribut, attr_data + " " + value) : elements[i].setAttribute(attribut, value); //если у атрибута уже было какое-то начение то объединяем их если не было то просто записываем новое чтоб избежать "null value"
             }
             //дополняем заначение атрибута
         }
@@ -279,152 +428,136 @@ const KSN_jQuery = {
         return this; //возвращаем объект this
     },
 
-    //добавляем класс class_name ко всем элементам находящимся в this
-    addClass: function(class_name, elements = this) {
-        let classes = this.string_to_array(class_name); //преобрзуем строковый список в масив
+    //добавляем классы class_name ко всем элементам elements
+    //class_name - перечень классов разделённых пробелами
+    //++
+    addClass: function(class_name = null, elements = this) {
+        if (class_name === null) { return this; } //если не преданы именна классов завершаем функцию
+        let classes = bf.string_to_array(class_name); //преобрзуем строковый список в масив
 
+        //перебираем все классы на добавление
         for (let i = 0; i < classes.length; i++) {
-            this.attr("class", classes[i], "inset", elements); //добавляем значения к атрибуту класса
+            //перебираем все элементы к которым нужно добавить классы
+            for (let b = 0; b < elements.length; b++) {
+                elements[b].classList.add(classes[i]) //если данного класса у элемента нет, то добавим его
+            }
+            //перебираем все элементы к которым нужно добавить классы
         }
-        //перебираем все элменты в объекте this и добавляем к каждому клас 
+        //перебираем все классы на добавление
 
         return this; //возвращаем объект this 
     },
+    //добавляем классы class_name ко всем элементам elements
 
-    //удаляем класс у элемента
-    removeClass: function(class_name, elements = this) {
-        for (let i = 0; i < elements.length; i++) {
-            let classes = this.string_to_array(class_name); //преобрзуем строковый список в масив
+    //удаляем классы class_name у всех элемнтов elements
+    //class_name - перечень классов разделённых пробелами
+    //++
+    removeClass: function(class_name = null, elements = this) {
+        if (class_name === null) { return this; } //если не преданы именна классов завершаем функцию
+        let classes = bf.string_to_array(class_name); //преобрзуем строковый список в масив
 
-            for (let b = 0; b < classes.length; b++) {
-                elements[i].classList.remove(classes[b]);
+        //перебираем все классы не удаление
+        for (let i = 0; i < classes.length; i++) {
+            //перебираем все элементы классы в которых нужно удалить
+            for (let b = 0; b < elements.length; b++) {
+                elements[b].classList.remove(classes[i]); //если у элемента есть данный клас удаляем его
             }
-
-
-            //если после удаления класса атрибут class остался пустым то мы удаляем его
-            if (elements[i].classList.length === 0) {
-                elements[i].removeAttribute("class");
-            }
-            //если после удаления класса атрибут class остался пустым то мы удаляем его
+            //перебираем все элементы классы в которых нужно удалить
         }
+        //перебираем все классы не удаление
+
         return this; //возвращаем объект this 
     },
+    //удаляем классы class_name у всех элемнтов elements
 
-    //проверяет наличее классов
-    hasClass: function(class_name, elements = this) {
-        let classes = this.string_to_array(class_name), //преобрзуем строковый список в масив
-            result; //результат проверки
+    //проверяет наличее классов у элементов elements, если хоть у одного элемента найдены все классы удовлетворяющие классам class_name значения то вернёт true
+    //class_name - перечень классов разделённых пробелами
+    //++
+    hasClass: function(class_name = null, elements = this) {
+        if (class_name === null) { return false; } //если не преданы именна классов завершаем функцию
+        let classes = bf.string_to_array(class_name); //преобрзуем строковый список в масив
 
-        for (let i = 0; i < classes.length; i++) {
-            result = elements[0].classList.contains(classes[i]);
+        //перебираем все элементы классы в которых нужно проверить на наличие
+        for (let b = 0; b < elements.length; b++) {
+            let temp_result; //тут будет запитываться и перезаписываться наличие каждого класса у текущего элемента
+            //перебираем все классы на проверку
+            for (let i = 0; i < classes.length; i++) {
+                //проверяет имеет ли текущий итерируемый элемент текущий проверяемый класс
+                if (elements[b].classList.contains(classes[i])) {
+                    temp_result = true; //если текущий проверяемый класс найден у текущего проверяемого элемента помечаем во временном результате обнаружение класса
+                } else {
+                    temp_result = false; //если текущий проверяемый класс НЕ найден у текущего проверяемого элемент помечам во временном результате неудачу
+                    break; //прекращаем дальнейший перебор классов, т.к. как киминимум один из классов у данного элемента не найден и можно переходить к проверке следующего элемента
+                }
+                //проверяет имеет ли текущий итерируемый элемент текущий проверяемый класс
+            }
+            //перебираем все классы на проверку
+
+            //если temp_result будет true значит все классы из списка class_name были обнаружены в каком-то элементе и можно вернуть ответ true, который обозначит что мы найшли как минимум один элемент в котором есть все классы из списка class_name
+            if (temp_result) {
+                return true; //возвращаем ответ что нашли такой элемент
+            }
+            //если temp_result будет true значит все классы из списка class_name были обнаружены в каком-то элементе и можно вернуть ответ true, который обозначит что мы найшли как минимум один элемент в котором есть все классы из списка class_name
         }
+        //перебираем все элементы классы в которых нужно проверить на наличие
 
-        return result; //возвращаем ответ есть клас у элмента или нет в формате bool
+        return false; //если функция дошла до этого момента и не завершилась ранее то значит не нашлось элементов в которых бы присустствовали сразу все классы из class_name и мы возвращаем false
     },
+    //проверяет наличее классов у элементов elements, если хоть у одного элемента найдены все классы удовлетворяющие классам class_name значения то вернёт true
 
     //добавляет или удаляет класс в зависимости отр того есть он у элемента или нет
-    toggleClass: function(class_name, elements = this) {
-        let classes = this.string_to_array(class_name); //преобрзуем строковый список в масив
+    //class_name - перечень классов разделённых пробелами
+    //++
+    toggleClass: function(class_name = null, elements = this) {
+        if (class_name === null) { return this; } //если не преданы именна классов завершаем функцию
+        let classes = bf.string_to_array(class_name); //преобрзуем строковый список в масив
 
-        //перебираем все элементы для смены классов
-        for (let i = 0; i < elements.length; i++) {
-            //перебираем все классы для проверки
-            for (let b = 0; b < classes.length; b++) {
-                if (this.hasClass(classes[b], [elements[i]])) { //если такой клас есть у элемента
-                    this.removeClass(classes[b], [elements[i]]); //удаляем его
-                } else {
-                    this.addClass(classes[b], [elements[i]]); //если такого класса нет то добавляем его
-                }
+        //перебираем все классы для переключения (добавить/удалить)
+        for (let i = 0; i < classes.length; i++) {
+            //перебираем все элементы для смены классов
+            for (let b = 0; b < elements.length; b++) {
+                elements[b].classList.toggle(classes[i]); //добавляем или удаляем класс у элемента в завистимости от того есть он у него или нет
+                //нет класса - добавляем; есть каласс - удаляем;
             }
+            //перебираем все элементы для смены классов
         }
+        //перебираем все классы для переключения (добавить/удалить)
 
         return this; //возвращаем объект this 
     },
+    //добавляет или удаляет класс в зависимости отр того есть он у элемента или нет
 
-    //фокусируется на первом элементе из объекта elements
-    focus: function(scrolling = false, elements = this) {
-        elements[0].focus({ preventScroll: scrolling }); //вокусируемся на элементе
+    //фокусируется на первом элементе из набора elements и при наличии callback после фокусировки вызывает функцию callback
+    //callback - функция которая будет вызвана после получения фокуса элементом
+    //prevent_scrolling - предотвращать прокрутку к элементу или нет при фокусировке, по умолчанию false, т.е. будет прокручиваться к элементу на котором установлен фокус
+    //++
+    focus: function(callback = null, prevent_scrolling = false, elements = this) {
+        elements[0].focus({ preventScroll: prevent_scrolling }); //фокусируемся на элементе
+        if (callback) { callback.call(this); } //если указан callback функция вызываем её передав в неё в качестве this текущий this
         return this; //возвращаем объект this 
     },
+    //фокусируется на первом элементе из набора elements и при наличии callback после фокусировки вызывает функцию callback
 
-    blur: function() {
-
+    //убирает фокус с первого элемента в наборе elements и при наличии callback после потери фокуса вызывает функцию callback
+    //callback - функция которая будет вызвана после получения фокуса элементом
+    //++
+    blur: function(callback = null, elements = this) {
+        elements[0].blur(); //снимаем фокус с первого элемента в наборе elements
+        if (callback) { callback.call(this); } //если указан callback функция вызываем её передав в неё в качестве this текущий this
+        return this; //возвращаем объект this 
     },
-
-    //внутренняя функция возвращает объект с данным width padding border margin переданного элемента для его ширины или высоты
-    getWidthOrHeight: function(element, dimension) {
-        if (dimension === "width") {
-            let padding_left = window.getComputedStyle(element).paddingLeft,
-                padding_right = window.getComputedStyle(element).paddingRight,
-                padding_lr = Number(padding_left.replace("px", "")) + Number(padding_right.replace("px", "")), //общая ширина padding
-                border_left = window.getComputedStyle(element).borderLeftWidth,
-                border_right = window.getComputedStyle(element).borderRightWidth,
-                border_lr = Number(border_left.replace("px", "")) + Number(border_right.replace("px", "")), //общая ширина border
-                margin_left = window.getComputedStyle(element).marginLeft,
-                margin_right = window.getComputedStyle(element).marginRight,
-                margin_lr = Number(margin_left.replace("px", "")) + Number(margin_right.replace("px", "")), //общая ширина margin
-                width = element.offsetWidth - padding_lr - border_lr;
-            return {
-                "width": width,
-                "padding": padding_lr,
-                "border": border_lr,
-                "margin": margin_lr
-            }
-        } else if (dimension === "height") {
-            let padding_top = window.getComputedStyle(element).paddingTop,
-                padding_bottom = window.getComputedStyle(element).paddingBottom,
-                padding_tb = Number(padding_top.replace("px", "")) + Number(padding_bottom.replace("px", "")), //общая ширина padding
-                border_top = window.getComputedStyle(element).borderTopWidth,
-                border_bottom = window.getComputedStyle(element).borderBottomWidth,
-                border_tb = Number(border_top.replace("px", "")) + Number(border_bottom.replace("px", "")), //общая ширина border
-                margin_top = window.getComputedStyle(element).marginTop,
-                margin_bottom = window.getComputedStyle(element).marginBottom,
-                margin_tb = Number(margin_top.replace("px", "")) + Number(margin_bottom.replace("px", "")), //общая ширина margin
-                height = element.offsetHeight - padding_tb - border_tb;
-            return {
-                "height": height,
-                "padding": padding_tb,
-                "border": border_tb,
-                "margin": margin_tb
-            }
-        }
-    },
-
-    //внутренняя функция для получения высот и ширин таких элементов как window и document
-    //elem - передаваемый объект window или document
-    //name - Width / Height
-    //target_property - свойство которое нужно получить, outerHeight к примеру
-    win_doc_wh: function(elem, name, target_property) {
-        if (elem === window) {
-            return target_property.indexOf("outer") === 0 ?
-                elem["inner" + name] :
-                elem.document.documentElement["client" + name];
-        }
-        //если это document
-        if (elem.nodeType === 9) {
-            let doc = elem.documentElement;
-
-            return Math.max(
-                elem.body["scroll" + name], doc["scroll" + name],
-                elem.body["offset" + name], doc["offset" + name],
-                doc["client" + name]
-            );
-        }
-
-        return false;
-    },
-
+    //убирает фокус с первого элемента в наборе elements и при наличии callback после потери фокуса вызывает функцию callback
 
     //ширина самого элемента без учёта margin border padding
     //value - значение которое нужно задать
     width: function(value = null, elements = this) {
+        let result = bf.win_doc_wh(elements[0], "Width", "width"); //проверям если это window или document
 
-        let result = this.win_doc_wh(elements[0], "Width", "width"); //проверям если это window или document
         if (result !== false) {
             return result; //возвращаем заначение если это window или document
         }
 
-        let data = this.getWidthOrHeight(elements[0], "width"); //получам объект с ширинами составных частей элемента таких как padding, margin и border
+        let data = bf.getWidthOrHeight(elements[0], "width"); //получам объект с ширинами составных частей элемента таких как padding, margin и border
 
         //если передано значение для установки ширины
         if (value) {
@@ -441,12 +574,12 @@ const KSN_jQuery = {
     //value - значение которое нужно задать
     innerWidth: function(value = null, elements = this) {
 
-        let result = this.win_doc_wh(elements[0], "Width", "innerWidth"); //проверям если это window или document
+        let result = bf.win_doc_wh(elements[0], "Width", "innerWidth"); //проверям если это window или document
         if (result !== false) {
             return result; //возвращаем заначение если это window или document
         }
 
-        let data = this.getWidthOrHeight(elements[0], "width"); //получам объект с ширинами составных частей элемента таких как padding, margin и border
+        let data = bf.getWidthOrHeight(elements[0], "width"); //получам объект с ширинами составных частей элемента таких как padding, margin и border
 
         //если передано значение для установки ширины
         if (value) {
@@ -463,12 +596,12 @@ const KSN_jQuery = {
     //mrg - учитывать margin или нет
     outerWidth: function(value = null, mrg = false, elements = this) {
 
-        let result = this.win_doc_wh(elements[0], "Width", "outerWidth"); //проверям если это window или document
+        let result = bf.win_doc_wh(elements[0], "Width", "outerWidth"); //проверям если это window или document
         if (result !== false) {
             return result; //возвращаем заначение если это window или document
         }
 
-        let data = this.getWidthOrHeight(elements[0], "width"); //получам объект с ширинами составных частей элемента таких как padding, margin и border
+        let data = bf.getWidthOrHeight(elements[0], "width"); //получам объект с ширинами составных частей элемента таких как padding, margin и border
 
         //если передано значение для установки ширины
         if (value) {
@@ -483,12 +616,12 @@ const KSN_jQuery = {
     //высота самого элемента без учёта margin border padding
     //value - значение которое нужно задать
     height: function(value = null, elements = this) {
-        let result = this.win_doc_wh(elements[0], "Height", "height"); //проверям если это window или document
+        let result = bf.win_doc_wh(elements[0], "Height", "height"); //проверям если это window или document
         if (result !== false) {
             return result; //возвращаем заначение если это window или document
         }
 
-        let data = this.getWidthOrHeight(elements[0], "height"); //получам объект с высотой составных частей элемента таких как padding, margin и border
+        let data = bf.getWidthOrHeight(elements[0], "height"); //получам объект с высотой составных частей элемента таких как padding, margin и border
 
         //если передано значение для установки высоты
         if (value) {
@@ -503,12 +636,12 @@ const KSN_jQuery = {
     //высота элемента и padding без учёта margin border
     //value - значение которое нужно задать
     innerHeight: function(value = null, elements = this) {
-        let result = this.win_doc_wh(elements[0], "Height", "innerHeight"); //проверям если это window или document
+        let result = bf.win_doc_wh(elements[0], "Height", "innerHeight"); //проверям если это window или document
         if (result !== false) {
             return result; //возвращаем заначение если это window или document
         }
 
-        let data = this.getWidthOrHeight(elements[0], "height"); //получам объект с высотой составных частей элемента таких как padding, margin и border
+        let data = bf.getWidthOrHeight(elements[0], "height"); //получам объект с высотой составных частей элемента таких как padding, margin и border
 
         //если передано значение для установки высоты
         if (value) {
@@ -525,12 +658,12 @@ const KSN_jQuery = {
     //mrg - учитывать margin или нет
     outerHeight: function(value = null, mrg = false, elements = this) {
 
-        let result = this.win_doc_wh(elements[0], "Height", "outerHeight"); //проверям если это window или document
+        let result = bf.win_doc_wh(elements[0], "Height", "outerHeight"); //проверям если это window или document
         if (result !== false) {
             return result; //возвращаем заначение если это window или document
         }
 
-        let data = this.getWidthOrHeight(elements[0], "height"); //получам объект с высотой составных частей элемента таких как padding, margin и border
+        let data = bf.getWidthOrHeight(elements[0], "height"); //получам объект с высотой составных частей элемента таких как padding, margin и border
 
         //если передано значение для установки высоты
         if (value) {
@@ -542,25 +675,26 @@ const KSN_jQuery = {
         return mrg ? data.height + data.padding + data.border + data.margin : data.height + data.padding + data.border; //в зависимости от того нужно ли учитывать margin возвращаем высоту элемента с его padding и border и при необходимости c margin
     },
 
-    //добавляем стиле элементам
+    //добавляем стили элементам
     //styles название стиля занчение которого нужно получитть или если задано value то установить этим значением, или styles это может быть объект с формате {"стиль1":"значение", "стиль2":"значение"}
     //value - значение для стиля в styles
+    //++
     css: function(styles, value = null, elements = this) {
         //переводим css название свойства в камелкейс формат
         //style_name - обычное название свойства css  к примеру border-radius
         let camal_case_css_property = function(style_name) {
-                let css_property = style_name[0] === "-" ? style_name.slice(1) : style_name, //проверяем наличие префикса webkit и прочих и удаляем - в начале
-                    arr_css_property = css_property.split("-"), //возвращаем массив
-                    property = arr_css_property[0]; //конечное имя свойства css для поиска в getComputedStyle
+                let css_property = style_name[0] === "-" ? style_name.slice(1) : style_name, //проверяем наличие префикса webkit и прочих и удаляем - в начале -webkit-border-radius или border-radius
+                    arr_css_property = css_property.split("-"), //возвращаем массив ["border", "radius"]
+                    property = arr_css_property[0]; //конечное имя свойства css для поиска в getComputedStyle "border"
 
-                //если в названии свойства ольше одного слова
+                //если в названии свойства больше одного слова
                 if (arr_css_property.length > 1) {
                     for (let i = 1; i < arr_css_property.length; i++) {
-                        property = property + arr_css_property[i][0].toUpperCase() + arr_css_property[i].slice(1); //ставим первую буклва слова в верхний регистр и то что получилось добавляем в кнец имени свойства property
+                        property = property + arr_css_property[i][0].toUpperCase() + arr_css_property[i].slice(1); //ставим первую букву слова в верхний регистр и то что получилось добавляем в конец имени свойства property  webkitBorderRadius borderRadius
                     }
                 }
-                //если в названии свойства ольше одного слова
-                return property; //возвращаем название css свойства в нужном виде
+                //если в названии свойства больше одного слова
+                return property; //возвращаем название css свойства в нужном виде webkitBorderRadius borderRadius
             },
             //переводим css название свойства в камелкейс формат
 
@@ -611,153 +745,138 @@ const KSN_jQuery = {
 
         return this; //возвращаем объект
     },
-    //добавляем стиле элементам
-
-
-
-
-
+    //добавляем стили элементам
 
     //возвращает элементы лежащие на одном уровне с elements и фильтруются по селектору selector, если selector будет null то венёт всех соседей
+    //selector - селекторы по которым будет фильтроваться итоговоый результат соседних элементов, пример "nav" или "nav, .header_burger_button, .header_phone_mobile"
+    //result = [] сюда будут записаны все соседи удовлетворяющие текущим условиям
     //++
-    siblings: function(selector = null, elements = this) {
-        let result = [], //сюда будутзаписаны все соседи
-            temp_arr = [], //тут будут хранится временные данные для одной итерации
-            filter_elements = []; //тут будут записаны элементы для фильтрации конечного результата
-
+    siblings: function(selector = null, elements = this, result = []) {
         //для каждого элемента в elements ищем соседей
-        elements.each(function() {
-            let parent = this[0].parentNode; //родитель текущего итерируемого элемента
-            temp_arr = this.return_skleniy_arr(temp_arr, parent.children); //записываем во временный массив всех соседей текущего итерируемого элемента включая его самого
+        for (let i = 0; i < elements.length; i++) {
+            let temp_arr = [], //тут будут хранится временные данные для одной итерации
+                parent = elements[i].parentNode; //родитель текущего итерируемого элемента
+            temp_arr = bf.return_skleniy_arr(temp_arr, parent.children); //записываем во временный массив всех соседей текущего итерируемого элемента включая его самого
 
             //если задан селектор для фильтрации соседей на выходе
             if (selector) {
-                temp_arr = this.return_cleaned_of_values(this, temp_arr); //удаляем из временного объекта сам итерируемый этемент, так как мы ищем его сосдей, а не его самого
-                filter_elements = this.return_skleniy_arr(filter_elements, this.return_selectors_arr(selector, parent)); //записываем в массив с элементами для фильтра все удовлетворяющие selector элементы найденные в его прямом родительском элементе
+                let all_children_element = bf.return_selectors_arr(selector, parent); //все потомки родителя текущего итерируемого элемента
+                temp_arr = bf.return_clone_elements_arr(all_children_element, temp_arr); //получем элементы которые находятся во временном массиве и удовлетворяют селекторам
             }
             //если задан селектор для фильтрации соседей на выходе
 
-            result = this.return_skleniy_arr(result, temp_arr); //записываем в конечный результирующйи объект данные из временно объекта текущей итерации
-        });
+            temp_arr = bf.return_cleaned_of_values([elements[i]], temp_arr); //удаляем из временного объекта сам итерируемый этемент, так как мы ищем его сосдей, а не его самого
+
+            result = bf.return_skleniy_arr(result, temp_arr); //записываем в конечный результирующий объект данные из временно объекта текущей итерации
+        };
         //для каждого элемента в elements ищем соседей
 
-        return selector ? this.return_clone_elements_arr(result, filter_elements) : this.output(result); //возвращаем всех найденых соседей если selector = null, или только те которые совпали с элементами объекта filter_elements
+        return this.construct_new_ksn(result); //возвращаем всех найденых соседей если selector = null, или только те которые совпали с элементами объекта filter_elements
     },
     //возвращает элементы лежащие на одном уровне с elements и фильтруются по селектору selector, если selector будет null то венёт всех соседей
 
     //возвращает прямых потомков элеметов elements, фильтруемых по селектору selector
     //если selector = null то вернёт всех прямых потомков элементов elements
     //отличается от find тем что ищет только на один уровень вниз элементов elements
+    //result = [] сюда будут записаны все прямые потомки удовлетворяющие текущим условиям
     //++
-    children: function(selector = null, elements = this) {
-        let result = [], //сюда будутзаписаны все прямые потомки
-            filter_elements = []; //тут будут записаны элементы для фильтрации конечного результата
-
+    children: function(selector = null, elements = this, result = []) {
         //для каждого элемента в elements ищем прямых потомков
-        elements.each(function() {
-            result = this.return_skleniy_arr(result, this[0].children); //записываем в результирующий массив всех прямых потомков текущего итерируемого элемента
-
-            //если задан силектор для фильтрации прямых потомков на выходе
+        for (let i = 0; i < elements.length; i++) {
+            //если заданы селекторы по которому фильтровать прямых потомков
             if (selector) {
-                filter_elements = this.return_skleniy_arr(filter_elements, this.return_selectors_arr(selector, this[0])); //записываем в массив с элементами для фильтра все удовлетворяющие selector элементы
+                let childrens = elements[i].children, //все прямые потомки текущего элемента
+                    all_elements = bf.return_selectors_arr(selector, elements[i]), //находим все элементы в текущем элементе которые удовлетворяют селекторам
+                    filter_elements = bf.return_clone_elements_arr(all_elements, childrens); //находим элементы которые находятся и в прямых потомках текущего элемента и удовлетворяют селекторам
+                result = bf.return_skleniy_arr(result, filter_elements); //записываем элементы в результат
             }
-            //если задан силектор для фильтрации прямых потомков на выходе
-        });
+            //если заданы селекторы по которому фильтровать прямых потомков
+
+            //фильтр прямых потомков не задан
+            else {
+                result = bf.return_skleniy_arr(result, elements[i].children); //записываем в результат всех прямых потомков каждого элемента
+            }
+            //фильтр прямых потомков не задан
+        };
         //для каждого элемента в elements ищем прямых потомков
 
-        return selector ? this.return_clone_elements_arr(result, filter_elements) : this.output(result); //в завистимости от того установлен фильтр в виде селектора или нет возвращаем объект с отфильтрованными элементами полученнным вледствии нахождения одинаковых элементов в result и filter_elements или же просто всех найденых прямых потомков в видео объекта , если selector не был установлен
+        return this.construct_new_ksn(result); //в завистимости от того установлен фильтр в виде селектора или нет возвращаем объект с отфильтрованными элементами полученнным вледствии нахождения одинаковых элементов в result и filter_elements или же просто всех найденых прямых потомков в видео объекта , если selector не был установлен
     },
     //возвращает прямых потомков элеметов elements, фильтруемых по селектору selector
 
-    //производим поиск по DOM древу каждого элемента в объекта this для поиска удовлетворяющих selector-ов
-    find: function(selector, elements = this) {
+    //производим поиск по DOM древу каждого элемента в elements для поиска удовлетворяющих selector елементов, если selector = "*" то верёнт всех потомков элементов elements
+    //result = [] сюда будут записаны все потомки удовлетворяющие текущим условиям
+    //++
+    find: function(selector, elements = this, result = []) {
+        if (!selector) { return this.construct_new_ksn() } //если селектор не задан вернём пустой объект
 
-        let result = []; //сюда будем записывать все найденные элементы
-
-        //перебираем объект this
+        //перебираем все элементы elements потомков которых нужно найти
         for (let i = 0; i < elements.length; i++) {
-            let item = this.return_selectors_arr(selector, elements[i]); //найденый элемент
-
-            //если элемента по selector-у найден тозаписываем его в конец массива
-            if (item) {
-                Array.prototype.push.apply(result, item);
-            }
+            let all_children = bf.return_selectors_arr(selector, elements[i]); //получаем всех потомков текущего итерируемого элемента
+            result = bf.return_skleniy_arr(result, all_children); //записываем в результирующий массив всех найденых и соответствующих селекторам потомков
         }
+        //перебираем все элементы elements потомков которых нужно найти
 
-        return this.output(result); //возвращаем функцию для пересоздания объекта this чтоб вернуть его в новом виде
+        return this.construct_new_ksn(result); //возвращаем функцию для пересоздания объекта this чтоб вернуть его в новом виде
     },
-    //производим поиск по DOM древу каждого элемента в объекта this для поиска удовлетворяющих selector-ов
+    //производим поиск по DOM древу каждого элемента в elements для поиска удовлетворяющих selector елементов, если selector = "*" то верёнт всех потомков элементов elements
 
-    //возвращает прямого родителя каждого elements, если задан selector то результат бюудет проверяется и на соотвествие ему
-    parent: function(selector = null, elements = this) {
-        let result = []; //сюда записываем родителей элементов
-
+    //возвращает прямого родителя каждого elements, если задан selector то результат будет проверяется и на соотвествие ему
+    //result = [] - сюда будут записаны все прямые родители элементов удовлетворяющих селекторам
+    //++
+    parent: function(selector = null, elements = this, result = []) {
         //перебираем все элементы elements
         for (let i = 0; i < elements.length; i++) {
-            result.push(elements[i].parentNode) //записываем в массив result родителей каждого элемент а elements
+            result.push(elements[i].parentNode); //записываем в массив result родителей каждого элемента elements
         }
         //перебираем все элементы elements
 
         //если задан селектор для отбора
         if (selector) {
-            let all_selectors = this.return_selectors_arr(selector), //объект со всеми элементами удовлетворяющими селектор selector
-                filter_result = this.return_clone_elements_arr(result, all_selectors); //получаем массив в который будут записаны одинаковые занчения найденные в массивах result и all_selectors
-            return this.output(filter_result); //возвращаем объект с отфильтрованными родительскими элементами
+            let all_selectors = bf.return_selectors_arr(selector), //массив со всеми элементами удовлетворяющими селектор selector
+                filter_result = bf.return_clone_elements_arr(result, all_selectors); //получаем массив в который будут записаны одинаковые занчения найденные в массивах result и all_selectors
+            return this.construct_new_ksn(filter_result); //возвращаем объект с отфильтрованными родительскими элементами
         }
         //если задан селектор для отбора
 
-        return this.output(result); //возвращаем объект с родительскими элементами
+        return this.construct_new_ksn(result); //возвращаем объект с родительскими элементами
     },
-    //возвращает прямого родителя каждого elements, если задан selector то результат бюудет проверяется и на соотвествие ему
+    //возвращает прямого родителя каждого elements, если задан selector то результат будет проверяется и на соотвествие ему
 
-
-
-
-
-
-
-
-    //возвращает всех родителей, удовлетворяющих selector
-    parents: function(selector = null, elements = this) {
-        let result = []; //сюда записываем всех родителей элементов
-
+    //возвращает всех родителей элементов elements, удовлетворяющих selector
+    //result = [] - сюда записываем всех родителей элементов удовлетворяющих селекторам
+    //++
+    parents: function(selector = null, elements = this, result = []) {
         //перебираем все элементы elements
         for (let i = 0; i < elements.length; i++) {
-            let el = elements[i], //текущий итерируемый элемент родетелей которого мы ищем
-                parents = []; //сюда записываем всех родетелей элемента el
+            let el = elements[i]; //текущий итерируемый элемент родетелей которого мы ищем
 
             //цикл while будет выпоолняться пока мы не доберёмся до родительского элемента document
             while (el.parentNode.nodeType !== 9) {
-                parents.push(el.parentNode); //записываем в массив parents каждого родитетя по очереди
+                result.push(el.parentNode); //записываем в массив result каждого родитетя по очереди
                 el = el.parentNode; //присваеваем текущему итерируемому элементу el его родителя чтоб обеспечить подъём вверх по DOM дереву элементов
             }
             //цикл while будет выпоолняться пока мы не доберёмся до родительского элемента document
-            result = this.return_skleniy_arr(result, parents);
+            result = bf.return_no_clone_arr(result); //чистим результирующий массив от повторяющихся элементов
         }
         //перебираем все элементы elements
 
         //если задан селектор для отбора
         if (selector) {
-            let all_selectors = document.querySelectorAll(selector), //получаем html-коллеккцию всех элементов по указаному селектору
-                filter_result = this.return_clone_elements_arr(result, all_selectors); //получаем массив в который будут записаны одинаковые занчения найденные в массивах result и all_selectors
-            return this.output(filter_result); //возвращаем объект с отфильтрованными родительскими элементами
+            return this.construct_new_ksn(bf.return_clone_elements_arr(result, bf.return_selectors_arr(selector))); //возвращаем объект с отфильтрованными родительскими элементами по селекторам
         }
         //если задан селектор для отбора
 
-        return this.output(result); //возвращаем объект с родительскими элементами
+        return this.construct_new_ksn(result); //возвращаем объект с родительскими элементами
     },
-    //возвращает всех родителей, удовлетворяющих selector
-
-
-
-
-
+    //возвращает всех родителей элементов elements, удовлетворяющих selector
 
     //возвращает объект с элементом соответствующим индексу index в объекте elements
-    //i = -1 выдаст последний элемент в наборе
-    eq: function(i, elements = this) {
-        let index = i === -1 ? elements.length - 1 : i,
-            el = elements[index]; //получаем элемент массива по индексу index, если не нашли то получим undefined
+    //index = -1 выдаст последний элемент в наборе
+    //++
+    eq: function(index, elements = this) {
+        let i = index === -1 ? elements.length - 1 : index,
+            el = elements[i]; //получаем элемент массива по индексу i, если не нашли то получим undefined
 
         //если нашли
         if (el) {
@@ -774,184 +893,66 @@ const KSN_jQuery = {
     //возвращает объект с элементом соответствующим индексу index в объекте elements
 
     //возвращает первый элемент в объекте elements
+    //++
     first: function(elements = this) {
         return this.eq(0);
     },
     //возвращает первый элемент в объекте elements
 
     //возвращает последний элемент в объекте elements
+    //++
     last: function(elements = this) {
         return this.eq(-1);
     }
     //возвращает последний элемент в объекте elements
-    //тугле
 }
 //объект с основными функциями
 
-//функция инициализирует первый поиск по selector-у и возвращает сформированный объект obj с прототипом KSN_jQuery
-function $(selector = null) {
-    let obj = Object.create(KSN_jQuery); //создаём пустой объект с прототипом KSN_jQuery
-    return obj.init(selector); //инициализируем, возвращаем наш объект obj с прототипом KSN_jQuery и всеми элементами найдеными по селекторам
+window.$ = ksn; //делаем вызов функции ksn через $
+
+//после вызова функции ksn.noConflict() ksn библеотека будет доступна только через вызов ksn
+ksn.noConflict = function() {
+    if (window.$ === ksn) {
+        window.$ = undefined;
+    }
 }
-//функция инициализирует первый поиск по selector-у и возвращает сформированный объект obj с прототипом KSN_jQuery
+//после вызова функции ksn.noConflict() ksn библеотека будет доступна только через вызов ksn
 
 
 
+//ПРИМЕЧАНИЕ: данные функции позволят сравнивать по скорости разные функции или процессы
+/*let kol = 10000;
 
-
-//console.log(jQuery("div.header_search_button").siblings("nav"))
-
-
-
-
-
-
-
-
-
-
-
-//console.log($(".header_menu_item, nav, body, header a[href='#'],#test"))
-
-
-
-
-//console.log($(".header_menu_item").removeAttr("titlr effef").removeClass("gweg trjjt").addClass("test egwgygruygbeg").toggleClass("egwgygruygbeg itsworck").toggleClass("test itsworck"));
-
-
-
-//$(".header_menu_item").on("click touchend", test, { passive: true });
-
-
-//console.log($(".header_logo").siblings("nav, header div.header_search_button"))
-
-
-//console.log($("img").parent("div, a"))
-//console.log(jQuery("img").parent("div, a"))
-
-//console.log($("header").find("img, a[href*='tel']"))
-//console.log(jQuery("header").find("img, a[href*='tel']"))
-
-
-
-//console.log($(".visible_header_part, .hidden_header_part").children("nav, .header_search_button"))
-//console.log(jQuery("body").children())
-
-
-
-//console.log($(".header_menu_item").siblings("div, a"))
-//console.log($(".svg_img").siblings("div, a"))
-//console.log($(".svg_img, .header_menu_item").siblings("div, a"))
-//console.log(jQuery(".header_menu_item").siblings("div, a"))
-//console.log(jQuery(".svg_img").siblings("div, a"))
-
-
-
-/*
-let header_menu_wrapper = $(".header_menu_wrapper"),
-    hidden_header_part = $(".hidden_header_part"),
-    header_burger_button = $(".header_burger_button"),
-    header_search_button = $(".header_search_button"),
-    search_wrapper = $(".search_wrapper"),
-    search_input = $(".search_input"),
-    close_search = $(".close_search");
-
-
-//открываем и закрывам меню по клику на бургер кнопку
-header_burger_button.on("click tochend", function() {
-    header_menu_wrapper.toggleClass("active");
-    setTimeout(function() {
-        header_menu_wrapper.toggleClass("test");
-    }, 10);
-
-});
-//открываем и закрывам меню по клику на бургер кнопку
-
-//клик по кнопке поиска в меню
-header_search_button.on("click tochend", function() {
-    if (!search_wrapper.hasClass("active")) {
-        search_wrapper.addClass("active"); //открываем блок с полемм ввода для поиска
-        hidden_header_part.addClass("show"); //открываем блок с полемм ввода для поиска
-        search_input.find("input").focus(); //ставим курсор на наше поле ввода
-    } else {
-        hidden_header_part.removeClass("show"); //открываем блок с полемм ввода для поиска
-        setTimeout(function() {
-            search_wrapper.removeClass("active"); //открываем блок с полемм ввода для поиска
-        }, 200);
+function ksn_spead_test() {
+    let time_start = new Date().getTime();
+    for (let i = 0; i < kol; i++) {
+        //$("#idishnik")
+        //$("#idishnik").addClass("test")
+        //$("#idishnik").hasClass("test")
+        //$("a.test_wf.data_2_tess#idishnik.thri_cl")
+        //$()
+        //$().each(["241","efewf", "effg"],test_f);
+        $("header").find("div").parents("div").children("div").siblings("nav, a, div.top_banner, .header_cart")
     }
-
-});
-//клик по кнопке поиска в меню
-
-
-//клик по крестику в окне поска
-close_search.on("click tochend", function() {
-    let input = search_wrapper.find("input");
-    //если в поле введён текст
-    if (search_wrapper.find("input")[0].value.length > 0) {
-        input[0].value = null; //удаляем этот текст
-        input.removeClass("nachat_vvod"); //убираем клас
-    }
-    //если в поле введён текст
-
-    //если в поле нет текста
-    else {
-        search_wrapper.removeClass("active"); //скрываем окно с полем ввода для поиска
-    }
-    //если в поле нет текста
-});
-//клик по крестику в окне поска
-
-//меняем цвет текста и границ после начала ввода
-search_wrapper.find("input")[0].oninput = function() {
-    let input = search_wrapper.find("input");
-    this.value.length > 0 ? input.addClass("nachat_vvod") : input.removeClass("nachat_vvod");
+    let time_finish = new Date().getTime(),
+        result = (time_finish - time_start) / 1000;
+    console.log(result + " сек")
 }
-//меняем цвет текста и границ после начала ввода
 
-
-
-// создадим элемент с прокруткой
-let div = document.createElement('div');
-
-div.style.overflowY = 'scroll';
-div.style.width = '50px';
-div.style.height = '50px';
-
-// мы должны вставить элемент в документ, иначе размеры будут равны 0
-document.body.append(div);
-let scrollWidth = div.offsetWidth - div.clientWidth;
-
-div.remove();
-
-//console.log(scrollWidth)
-
-
-function getScrollBarWidth() {
-    var inner = document.createElement('p');
-    inner.style.width = "100%";
-    inner.style.height = "200px";
-
-    var outer = document.createElement('div');
-    outer.style.position = "absolute";
-    outer.style.top = "0px";
-    outer.style.left = "0px";
-    outer.style.visibility = "hidden";
-    outer.style.width = "200px";
-    outer.style.height = "150px";
-    outer.style.overflow = "hidden";
-    outer.appendChild(inner);
-
-    document.body.appendChild(outer);
-    var w1 = inner.offsetWidth;
-    outer.style.overflow = 'scroll';
-    var w2 = inner.offsetWidth;
-    if (w1 == w2) w2 = outer.clientWidth;
-
-    document.body.removeChild(outer);
-
-    return (w1 - w2);
-};
-
-//console.log(getScrollBarWidth())
-*/
+function jQuery_spead_test() {
+    let time_start = new Date().getTime();
+    for (let i = 0; i < kol; i++) {
+        //jQuery("#idishnik")
+        //jQuery("#idishnik").addClass("test")
+        //jQuery("#idishnik").hasClass("test")
+        //jQuery("a.test_wf.data_2_tess#idishnik.thri_cl")
+        //jQuery()
+        //jQuery.each(["241","efewf", "effg"],test_f);
+        jQuery("header").find("div").parents("div").children("div").siblings("nav, a, div.top_banner, .header_cart")
+    }
+    let time_finish = new Date().getTime(),
+        result = (time_finish - time_start) / 1000;
+    console.log(result + " сек")
+}*/
+//ksn_spead_test()
+//jQuery_spead_test()

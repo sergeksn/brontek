@@ -12,5 +12,8 @@
 
 <body>
     <header>
-        <?php include_once __DIR__.'/templates/top_menu_block.php' ?>
+        <div class="header_wrapper col-12">
+            <?php include_once __DIR__.'/templates/top_baner.php' ?>
+            <?php include_once __DIR__.'/templates/top_menu_block.php' ?>
+        </div>
     </header>
