@@ -15,7 +15,9 @@ function generate_string($spisok = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGH
 ?>
 <div class="top_banner_wrap col-12" id="id_NKkGUF0X9DGuvct">
     <a href="#">
-        <img src="/img/header/banner.jpg" alt="">
+        <div class="img_wrapper" style="padding-top: 4.1666%;">
+            <img data-type="img_content" src="/img/header/banner.jpg" alt="">
+        </div>
     </a>
     <div class="close_banner">
         <div class="line_1"></div>
@@ -31,4 +33,6 @@ let top_banner_wrap = document.getElementsByClassName("top_banner_wrap")[0],
 cookie_top_baner = cookie_top_baner ? cookie_top_baner[1] : false;//если значения нет занчит показываем банер, если есть то скрываем
 
 if(cookie_top_baner) top_banner_wrap.style.display = "none";
+
+
 </script>

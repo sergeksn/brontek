@@ -1,8 +1,8 @@
 <?php require_once "header.php"; ?>
 
     <main>
-        <div style="height:750px; background-color: green;"></div>
-    <?php /*
+
+    <?php 
         $url = $_SERVER['REQUEST_URI'];
 
         if($url == "/"){
@@ -10,7 +10,7 @@
         } else {
             include_once __DIR__."/pages".$url.".php";
         }
-        */
+        
     ?>
     </main>
 

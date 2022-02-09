@@ -10,7 +10,13 @@
 
 //ВЕРХНЕЕ МЕНЮ И БАНЕР
 //скрываем банер при клике на крестик
-let header_wrapper = $(".header_wrapper"),
+header = $("header");
+header_height = Number(header.css("height").replace("px", "")); //высота блока банера и верхнего меню
+
+
+
+let header_menu = $(".header_menu_wrapper"),
+    header_menu_height = Number(header_menu.css("height").replace("px", "")),
     top_baner = $(".top_banner_wrap"),
     close_baner_button = top_baner.find(".close_banner");
 
@@ -25,11 +31,18 @@ close_baner_button.on("click tochend", function() {
 });
 //скрываем банер при клике на крестик
 
-
 //ВЕРХНЕЕ МЕНЮ И БАНЕР
+//
+$(window).on("scroll", function() {
+    let hide = window.pageYOffset >= (header_height+header_menu_height) ? true : false;
 
+    if(hide){
+        header.animate({ "top": "-"+header_height+"px"});
+        return;
+    }
 
-
+    header.animate({ "top": "0"});
+});
 
 
 

@@ -52,12 +52,11 @@ h6 {
 }
 
 body {
+    background-color: var(--blue-theme);
     margin: 0;
     font-family: Manrope;
     font-size: var(--font-normal);
     overflow-x: hidden;
-
-    overflow: scroll;
 }
 
 @media (max-width: 1250px) {
@@ -135,6 +134,17 @@ img {
 }
 
 
+.img_wrapper {
+    position: relative;
+}
+
+.img_wrapper img{
+    position: absolute;
+    width: 100%;
+    top: 0;
+    left: 0;
+}
+
 /*
 *
 ОСНОВНЫЕ СТИЛИ И ПЕРЕМЕННЫЕ
@@ -150,18 +160,21 @@ img {
 ВЕРХУШКА САЙТА
 *
 */
-
 /*оболочка хедера*/
-.header_wrapper {}
-
+header {
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+header.hide {
+    top: 0;
+}
 /*оболочка хедера*/
 
 /*банер*/
 .top_banner_wrap {}
-
-.top_banner_wrap a {
-    display: flex;
-}
 
 .close_banner {
     width: 25px;

@@ -206,10 +206,10 @@ let bf = {
         //secure: true //куки будут переданы толкьо по HTTPS протоколу
     }) {
 
-        name = decodeURIComponent(name);//получаем "uswvewvc vw vw vweer" из "uswvewvc%20vw%20vw%20vweer" или "uswvewvc vw vw vweer" из "uswvewvc vw vw vweer"
-        name = encodeURIComponent(name);//получаем "uswvewvc%20vw%20vw%20vweer" из "uswvewvc vw vw vweer"
+        name = decodeURIComponent(name); //получаем "uswvewvc vw vw vweer" из "uswvewvc%20vw%20vw%20vweer" или "uswvewvc vw vw vweer" из "uswvewvc vw vw vweer"
+        name = encodeURIComponent(name); //получаем "uswvewvc%20vw%20vw%20vweer" из "uswvewvc vw vw vweer"
 
-        if(!options.path){options.path = '/';}//если явно не задан адрес дял которого работает куки то делаем его доступным для всего сайта
+        if (!options.path) { options.path = '/'; } //если явно не задан адрес дял которого работает куки то делаем его доступным для всего сайта
 
         //проверим соответсвует парметр expires объекта options формату даты unix
         if (options.expires instanceof Date) {
@@ -239,8 +239,8 @@ let bf = {
     //name - имя куки значение которого нужно получить
     getCookie: function(name) {
         //может быть передано значение как "uswvewvc%20vw%20vw%20vweer" так и "uswvewvc vw vw vweer" , по этому сначало декодируем в строку с пробелами, а потом кодируем с заменой на соответствующие символы, тем самым мы получим надёжный вывод вне зависимости от того как запросился куки
-        name = decodeURIComponent(name);//получаем "uswvewvc vw vw vweer" из "uswvewvc%20vw%20vw%20vweer" или "uswvewvc vw vw vweer" из "uswvewvc vw vw vweer"
-        name = encodeURIComponent(name);//получаем "uswvewvc%20vw%20vw%20vweer" из "uswvewvc vw vw vweer"
+        name = decodeURIComponent(name); //получаем "uswvewvc vw vw vweer" из "uswvewvc%20vw%20vw%20vweer" или "uswvewvc vw vw vweer" из "uswvewvc vw vw vweer"
+        name = encodeURIComponent(name); //получаем "uswvewvc%20vw%20vw%20vweer" из "uswvewvc vw vw vweer"
 
         let matches = document.cookie.match(new RegExp(
             "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
@@ -903,8 +903,60 @@ const KSN_jQuery = {
     //++
     last: function(elements = this) {
         return this.eq(-1);
-    }
+    },
     //возвращает последний элемент в объекте elements
+
+    //анимирует элементы
+    //properties - стили css которые нужно анимировать в формате {style:value, style_2,value_2}
+    //duration - длительность в милисекундах которую будет длится анимация 400 = 0.4s
+    //timing_function - как будет протекать анимация, значение дяля transition-timing-function
+    //callback - функция которая будет вызвана для кажого элемента на котором была применена анимация после её завершеения в качестве параметра this для функции будет передан DOM елемент к которому применялась анимация
+    animate: function(properties = null, duration = 400, timing_function = "ease-out", callback = null) {
+        if (properties === null) return this;
+
+        let transition_style_fo_write = ""; //будет содеражть стили transition для записи
+
+        for (let style in properties) { transition_style_fo_write += "" + style + " " + duration / 1000 + "s " + timing_function + ","; } //получаем итоговый вид свойства transition
+
+        //добавляем каждому элементу нужный transition если нужно составляем из нового и его уже имеющегося
+        this.each(function() {
+            let el = $(this),
+                el_transition_style = el.css("transition");
+
+            //если transition стоит по умолчанию
+            if (el_transition_style === "all 0s ease 0s") {
+                el.css("transition", transition_style_fo_write.slice(0, -1)); //удаляем запятую в конце
+                return;
+            }
+            //если transition стоит по умолчанию
+
+            //перебираем все css свойства чтоб удалить у исходного значения transition дулбирующиеся значения
+            for (let style in properties) {
+                if (!el_transition_style.includes(style)) { continue; } //если свойство transition не содержит текущее перебираемое название css свойства
+                el_transition_style += ","; //добаляем ив конце запятую чтоб корректно работал поиск по регулярному выражению
+                el_transition_style = el_transition_style.replace(new RegExp(style + " [^s]+s [^,]+,"), ""); //удаляем из начального свойства transition элемента те значения которые будут перезаписаны при анимировании
+            }
+            //перебираем все css свойства чтоб удалить у исходного значения transition дулбирующиеся значения
+
+            el.css("transition", el_transition_style + transition_style_fo_write.slice(0, -1)); //задаёем свойство transition составленое из уже имеющегося значения у элемента с тем что нужно задать и убираем зарятую в конце
+        });
+        //добавляем каждому элементу нужный transition если нужно составляем из нового и его уже имеющегося
+
+        //каждому элементу задаём стили для анимирования
+        this.each(function() {
+            let el = $(this);
+
+            for (let style in properties) {
+                el.css(style, properties[style]);
+            }
+
+            if (callback) { callback.call(this) } //если нужно вызываем функцию и передаём ей в качестве парметра this текущий DOM элемент к которому была применена анимация
+        });
+        //каждому элементу задаём стили для анимирования
+
+        return this;
+    },
+    //анимирует элементы
 }
 //объект с основными функциями
 
