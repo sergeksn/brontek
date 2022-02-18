@@ -159,7 +159,7 @@
         </div>
     </div>
 </footer>
-<script src="/assets/js/jquery.js"></script>
+<!--<script src="/assets/js/jquery.js"></script>-->
 <script src="/assets/js/my_js_library.js"></script>
 <script src="/assets/js/main.js"></script>
 </body>

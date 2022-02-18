@@ -15,24 +15,27 @@ function generate_string($spisok = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGH
 ?>
 <div class="top_banner_wrap col-12" id="id_NKkGUF0X9DGuvct">
     <a href="#">
-        <div class="img_wrapper" style="padding-top: 4.1666%;">
-            <img data-type="img_content" src="/img/header/banner.jpg" alt="">
+        <div class="img_wrapper" style="padding-top: 4.1667%;">
+            <img data-type="img_content" data-src="/img/header/banner.jpg" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
         </div>
     </a>
-    <div class="close_banner">
-        <div class="line_1"></div>
-        <div class="line_2"></div>
+    <div class="close_banner_wrap">
+        <div class="close_banner">
+            <div class="line_1"></div>
+            <div class="line_2"></div>
+        </div>
     </div>
 </div>
 <script>
-//
-let top_banner_wrap = document.getElementsByClassName("top_banner_wrap")[0],
-    top_banner_id = top_banner_wrap.getAttribute("id"),
-    cookie_top_baner = document.cookie.match(new RegExp("(?:^|; )top_baner_hide_"+top_banner_id+"=([^;]*)"));//пытаемся получить значение из куки
+let top_banner_show_check = function() {
+    let top_banner_wrap = document.getElementsByClassName("top_banner_wrap")[0],
+        top_banner_id = top_banner_wrap.getAttribute("id"),
+        cookie_top_baner = document.cookie.match(new RegExp("(?:^|; )top_baner_hide_" + top_banner_id + "=([^;]*)")); //пытаемся получить значение из куки
 
-cookie_top_baner = cookie_top_baner ? cookie_top_baner[1] : false;//если значения нет занчит показываем банер, если есть то скрываем
+    cookie_top_baner = cookie_top_baner ? cookie_top_baner[1] : false; //если значения нет занчит показываем банер, если есть то скрываем
 
-if(cookie_top_baner) top_banner_wrap.style.display = "none";
+    if (cookie_top_baner) top_banner_wrap.style.display = "none";
+}
 
-
+top_banner_show_check();
 </script>

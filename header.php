@@ -41,12 +41,17 @@
     </header>
     <div id="header_overlay"></div>
 <script>
-    let header = document.getElementsByTagName("header")[0],
-        header_overlay = document.getElementById("header_overlay"),
-        header_height = window.getComputedStyle(header).height,
-        header_width = window.getComputedStyle(header).width;
+    let header_position = function(){
+        let header = document.getElementsByTagName("header")[0],//элемент header
+        header_overlay = document.getElementById("header_overlay"),//элемент #header_overlay
+        header_height = window.getComputedStyle(header).height;//высота хедера числом
 
-        header_height = header_height.replace("px", "");
-        header_width = header_width.replace("px", "");
-        header_overlay.style.paddingTop = header_height/header_width*100+"%";
+        header_overlay.style.height = header_height;//задаём высоту подложки хедера
+
+        //после того как структура DOM загрузилась меняем position, чтоб меню сначало появилось, а после подгрузки скриптов уже было подвижным
+        document.addEventListener("DOMContentLoaded", function(){
+            header.style.position = "fixed";
+        })
+    }
+    header_position();
 </script>

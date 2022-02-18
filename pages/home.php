@@ -6,7 +6,9 @@
             </div>
         </div>
         <div class="col-12">
-            <img src="/img/home/home_top_fon_car.jpg" alt="">
+            <div class="img_wrapper" style="padding-top: 60.7812%;">
+                <img data-type="img_content" data-src="/img/home/home_top_fon_car.jpg" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
+            </div>
         </div>
     </div>
     <div class="col-6">
