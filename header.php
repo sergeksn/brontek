@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/assets/css/setka.css">
     <link rel="stylesheet" href="/assets/css/critikal.css">
     <script>
-        const data_site = {};/*тут будут храниться все данные для работы скриптов сайта*/
+        const GDS = {};/*global data site  тут будут хранится все необходимые данные для работы фронтенда сайта, размеры блоков или какието-то данные для взаимодействия модулей*/
     </script>
     <style>
     #header_overlay{
@@ -34,24 +34,19 @@
     </style>
 </head>
 
-<body>
-    <header>
+<body class="custom_scrollbar">
+    <header class="custom_scrollbar">
         <?php include_once __DIR__.'/templates/top_baner.php' ?>
         <?php include_once __DIR__.'/templates/top_menu_block.php' ?>
     </header>
     <div id="header_overlay"></div>
+    <div id="overlay"></div>
 <script>
-    let header_position = function(){
-        let header = document.getElementsByTagName("header")[0],//элемент header
-        header_overlay = document.getElementById("header_overlay"),//элемент #header_overlay
-        header_height = window.getComputedStyle(header).height;//высота хедера числом
-
-        header_overlay.style.height = header_height;//задаём высоту подложки хедера
-
-        //после того как структура DOM загрузилась меняем position, чтоб меню сначало появилось, а после подгрузки скриптов уже было подвижным
-        document.addEventListener("DOMContentLoaded", function(){
-            header.style.position = "fixed";
-        })
-    }
-    header_position();
+    /*нужно чтоб в момент загрузки страницы меню занимало нужную позицию и не прыгало относитель но контента*/
+    (() => {
+        let header = document.getElementsByTagName("header")[0],/*элемент header*/
+        header_overlay = document.getElementById("header_overlay"),/*элемент #header_overlay*/
+        header_height = window.getComputedStyle(header).height;/*высота хедера числом*/
+        header_overlay.style.height = header_height;/*задаём высоту подложки хедера*/
+    })()
 </script>

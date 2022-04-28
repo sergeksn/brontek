@@ -1,6 +1,12 @@
 <?php require_once "header.php"; ?>
 
-    <main style="position: relative;">
+    <main style="position: relative; height: 1000px;">
+
+
+
+
+
+
         <div id="bg_green_block" style="
         height:750px; 
         width: 500px; 
@@ -22,9 +28,8 @@
             <div id="block_2" style="
             height:100px; 
             width: 100px; 
-            margin: 10px 0; 
             background-color: red;
-            position: relative; 
+            position: absolute; 
             left: 0px;
             ">block_2</div>
             <div id="block_3" style="

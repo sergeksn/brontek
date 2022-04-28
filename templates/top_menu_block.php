@@ -45,7 +45,7 @@
     <div class="hidden_header_part">
         <div class="search_wrapper">
             <div class="search_input">
-                <input type="text" placeholder="Найти">
+                <input type="text" placeholder="Найти" maxlength="100">
                 <div class="close_search">
                     <div class="line_1"></div>
                     <div class="line_2"></div>
@@ -56,6 +56,10 @@
                     <img src="/img/header/search.svg" alt="">
                 </div>
             </div>
+        </div>
+        <div class="search_results">
+            <div class="search_loader"></div>
+            <div class="results_wrapper"></div>
         </div>
         <nav class="header_menu_mobile">
             <div class="header_menu_item">
@@ -83,5 +87,6 @@
             </div>
             <a href="tel:+88000000000">8 800 000-00-00</a>
         </div>
+        <div id="shadow_block"></div>
     </div>
 </div>

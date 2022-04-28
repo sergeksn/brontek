@@ -18,7 +18,75 @@ const list_data = {
 
 //базовые функции для работы
 //bf - base functions
-let bf = {
+const bf = {
+    //проверяет является устройство пользователя сенсорным экраном
+    touch_devise_screen: function() {
+        return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    },
+    //проверяет является устройство пользователя сенсорным экраном
+
+    //подготовливаем данные перед отправкой в нужном формате
+    //object - объект с данныеми которые нужно подготовить
+    getFormData: function(object) {
+        const formData = new FormData(); //данные для отправки в виде формированных данных
+
+        //функцию для формирования пары ключ : значение и добавления из в данные формы отправки на сервер
+        let foreach_object = function(object, title_data) {
+            //перебираем object
+            for (let key in object) {
+                let title = title_data + "[" + key + "]"; // формируем имя ключа для записи в форму для отправки данных на сервер
+
+                if (typeof object[key] === 'object') { //если элемент object тоже является объектом
+                    foreach_object(object[key], title); //рекурсивно вызываем функцию foreach_object
+                } else {
+                    formData.append(title, object[key]); //если элемент object не объект то записываем его в данные для отправки ключ : значение
+                }
+            }
+            //перебираем object
+        };
+        //функцию для формирования пары ключ : значение и добавления из в данные формы отправки на сервер
+
+        //перебираем object на основании которого нужно сформировать данные для отправики на сервер
+        for (let key in object) {
+            if (typeof object[key] === 'object') { //если элемент object тоже является объектом
+                foreach_object(object[key], key); //отправляем в функцию для формирования пары ключ : значение и добавления из в данные формы отправки на сервер
+            } else {
+                formData.append(key, object[key]); //если элемент object не объект то записываем его в данные для отправки ключ : значение
+            }
+        }
+        //перебираем object на основании которого нужно сформировать данные для отправики на сервер
+
+        return formData; //возвращаем сформированные данный для отправки на сервер
+    },
+    /*
+    нужный формат 
+    action: save_new_settings
+    data[site_seo_active]: yes
+    */
+    //подготовливаем данные перед отправкой в нужном формате
+
+    //выпоняем запрос на сервер и возвращаем ответ с сервера
+    //options - объект со значениями для отправки на сервер
+    //url - путь к файлу на сервера к которому обращаемся, для WP это ajaxurl
+    //time_to_out - таймаут для ответа, т.е. максимальное количество миллисикунд данное на ответ, иначер вызовется ontimeout
+    request_to_server: function(options, url, time_to_out = null) {
+        const request = new XMLHttpRequest(); //сам запрос
+
+        request.open("POST", url); //начало запроса
+
+        if (time_to_out) {
+            request.timeout = time_to_out; //время на выполнения запроса 15 сек, если не успеет то прерываем и выводим ошибку
+        }
+
+        request.send(this.getFormData(options)); //отправка запроса
+        return new Promise((resolve, reject) => {
+            request.onload = function() { resolve(request); };
+            request.ontimeout = function() { reject("timeout"); };
+            request.onerror = function() { reject(request); };
+        });
+    },
+    //выпоняем запрос на сервер и возвращаем ответ с сервера
+
     remove_default: function(e) { e.preventDefault() }, //функция призвана остановить события браузера по умолчанию для тех элементов и событий к которым она вызвана
 
     //ПРИМЕЧАНИЕ: не знаю почему но при движении нескольких точек по экрану в момент одновременного их события touchmove идентификаторы и соответсвенно события первого касание перекрывает более позние, тем самым переодически получаются глюки что когда движется второй палец браузер считает что движентся первый
@@ -58,11 +126,11 @@ let bf = {
                 max_px_dist_x: null, //максимальная дистанция, не превышая которую может пройти указатель, чтобы жест считался как свайп в пикселях px
                 min_px_dist_y: null, //максимальная дистанция, не превышая которую может пройти указатель, чтобы жест считался как свайп в пикселях px
                 max_px_dist_y: null, //максимальная дистанция, не превышая которую может пройти указатель, чтобы жест считался как свайп в пикселях px
-                min_time: 50, //максимальное время, за которое должен быть совершен свайп (ms)
-                max_time: 1000, //минимальное время, за которое должен быть совершен свайп (ms)
+                min_time: 50, //минимальное время, за которое должен быть совершен свайп (ms)
+                max_time: 1000, //максимальное время, за которое должен быть совершен свайп (ms)
                 allow_leave: true, //считать ли жесты при которых указатель покидал границы элемента свайпом, если false то если указатиль покинул границы элемента свайп не будет засчитан
                 remove_default_events: true, //убирать ли события click mousedown touchstart mousemove touchmove mouseup touchend mouseleave touchcancel по умолчанию для элемента
-                /*callback_success: () => console.log("SUCCESS"), //функция которая будет вызвана если жест над элементом был свайпом, тоже самое что и срабатывае события, но выполяняется раньше чем событие убдует инициализированно, а следоовательно запустится раньше чем те функции которые прикреплены к событию swipe
+                /*callback_success: () => console.log("SUCCESS"), //функция которая будет вызвана если жест над элементом был свайпом, тоже самое что и срабатывае события, но выполяняется раньше чем событие будет инициализированно, а следоовательно запустится раньше чем те функции которые прикреплены к событию swipe
                 callback_fail: () => console.log("FAIL"), //функция которая будет вызвана если жест над элементом не был свайпом
                 callback_finally: () => console.log("FINALLY"), //функция которая будет вызвана по завершенни проверки действия на свайп, вне зависимости как завершилась проверка
                 callback_start: () => console.log("START"), //функция которая будет вызвана каждый раз при старте свайпа, когда указатель нажали
@@ -79,7 +147,7 @@ let bf = {
                 start_terget_el: null, //элемент на котором начат свайп, т.е. нажали мышь или палец
                 finall_target_el: null, //элемент на котором окончен свайп, т.е. отпустили кнопку мыши или палец, не особо работает для сенсорых экранов там почему-то всего элемент который мы нажали вначале
                 direction: "", //направление свайпа
-                start_direction: null, //начальное направление свайпа, для того чтоб поянт куда изначально элемент начали смещать
+                start_direction: null, //начальное направление свайпа, для того чтоб понять куда изначально элемент начали смещать
                 some_touches: false, //если true то будет регистрировать свайп даже при нескольких точках касания на сансорном экране (вне целевого элемента!!!), и как следствие сможет обрабатывать несколько разных свайпов или других сенсорных событий для разных элементов одновременно
                 touch_identifier: null, //ВАЖНО: это для избежаения ошибки иногда индентификаторы путаются местами и получается глюки, не знаю почему так происходит, но сверяем идентификаторы мы именно чтоб избежать багов
                 permission_directions: {
@@ -100,7 +168,8 @@ let bf = {
                 x: 0, //будет хранить изменяемую позицию точки нажатия при перемещении по горизонтали
                 y: 0, //будет хранить изменяемую позицию точки нажатия при перемещении по вертикали
                 x_dist: 0, //дистанция проейдаеная по горизонтали
-                y_dist: 0 //дистанция проейдаеная по вертикали
+                y_dist: 0, //дистанция проейдаеная по вертикали
+                abort_swipe_fail: false //может быть использованно для принудительного прерывания свайпа как неудачный
             };
             // настройки по умолчанию
 
@@ -159,7 +228,7 @@ let bf = {
         },
         //срабатывает в момент подключения слушателя swipe к элементу
 
-        //при ресайзе пересчитываем максимальные и минимальные вдлинны свайпа в пикселях
+        //при ресайзе пересчитываем максимальные и минимальные длинны свайпа в пикселях
         resize_recalculete: function() {
             for (let i = 0; i < list_data.swipe.length; i++) {
                 let settings = list_data.swipe[i].settings,
@@ -172,7 +241,7 @@ let bf = {
                 settings.max_px_dist_y = (el_height / 100) * settings.max_percent_dist_y;
             }
         },
-        //при ресайзе пересчитываем максимальные и минимальные вдлинны свайпа в пикселях
+        //при ресайзе пересчитываем максимальные и минимальные длинны свайпа в пикселях
 
         //ищем текущий элемент с его настройками для свайпа
         get_settings: function(el) {
@@ -245,6 +314,12 @@ let bf = {
             if (!event) {
                 bf.swipe_event.end(false, settings);
                 return; //если указатель не прошёл проврку, больше одного касания или не разрешённая кнопка миши
+            }
+
+            //если через калбеки было прервано выполение свайпа
+            if (settings.abort_swipe_fail) {
+                bf.swipe_event.end(false, settings);
+                return;
             }
 
             settings.terget_el = event.target; //записываем элемент над которым проходит сейчас указатель, не особо работает для сенсорых экранов там почему-то всего элемент который мы нажали вначале
@@ -455,63 +530,6 @@ let bf = {
     },
     //функция реализует событие свайпа
 
-    //преобразует строку в массив разделитель separator
-    //++
-    string_to_array: function(string, separator = " ") {
-        return string.split(separator); //возвращаем массив
-    },
-
-    //преобразуем массивоподобные объекты в separator
-    //++
-    toArray: function(data) {
-        return Array.from(data);
-    },
-    //преобразуем массивоподобные объекты в массивы
-
-    //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект в котором будут только те элементы которые встречаются в обоих массивах
-    //clone_clean - если true то вернёт массив без одинаковых значений
-    return_clone_elements_arr: function(arr_1, arr_2, clone_clean = true) {
-        let massiv_1 = Array.isArray(arr_1) ? arr_1 : this.toArray(arr_1), //если вдруг это не массив то преобразуем в массив
-            massiv_2 = Array.isArray(arr_2) ? arr_2 : this.toArray(arr_2), //если вдруг это не массив то преобразуем в массив
-            //перебираем массив massiv_1 для поиска совпадающих значений с массивом massiv_2
-            result = massiv_1.filter((item, index) => {
-                return massiv_2.indexOf(item) !== -1; //если indexOf вернул не -1 то функция вернёт true и текущий элемнт будет добавлен в массив result так как он присутствует в обоих массивах
-            });
-        //перебираем массив massiv_1 для поиска совпадающих значений с массивом massiv_2
-
-        return clone_clean ? this.return_no_clone_arr(result) : result; //удаляем повоторяющиеся элементы и возвращаем новый объект
-    },
-    //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект в котором будут только те элементы которые встречаются в обоих массивах
-
-    //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект содержащий все элементы обеих массивов
-    //clone_clean - если true то вернёт массив без одинаковых значений
-    //result = [] массив в который будем записывать все элементы
-    return_skleniy_arr: function(arr_1, arr_2, clone_clean = true, result = []) {
-        result.push.apply(result, arr_1); //записываем данные из arr_1
-        result.push.apply(result, arr_2); //записываем данные из arr_2
-        return clone_clean ? this.return_no_clone_arr(result) : result;
-    },
-    //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект содержащий все элементы обеих массивов
-
-    //получает на вход массив (массивоподобный объект), после этого удаляет в нём одинаковые значения и возвращает результирующий объект с новой длинной
-    return_no_clone_arr: function(arr) {
-        //let result = this.toArray(new Set(arr));//здесь применяется метод set который возвращает только уникальные значения
-        let massiv = Array.isArray(arr) ? arr : this.toArray(arr), //если вдруг это не массив то преобразуем в массив
-            result = massiv.filter((item, index) => { return massiv.indexOf(item) === index }); //с помошью фильтрующего метода Array возвращаем массив в котором будт только элементы удовлетворяющие условию massiv.indexOf(item) === index, т.е. если будет повторяющееся значение его индекс будет равен не его индексу , а первому такому элементу в массиве, следовательно этот элемент повторно не будет включаться
-        return result;
-    },
-    //получает на вход массив (массивоподобный объект), после этого удаляет в нём одинаковые значения и возвращает результирующий объект с новой длинной
-
-    //очищает массив arr от значений values
-    return_cleaned_of_values: function(values, arr) {
-        let cleaned = Array.isArray(values) ? values : this.toArray(values), //если вдруг это не массив то преобразуем в массив
-            massiv = Array.isArray(arr) ? arr : this.toArray(arr), //если вдруг это не массив то преобразуем в массив
-            result = massiv.filter((item) => !cleaned.includes(item));
-        //result = massiv.filter((item) => { return cleaned.indexOf(item) < 0 });тоже самое но с помощью метода indexOf
-        return result;
-    },
-    //очищает массив arr от значений values
-
     //внутренняя функция возвращает объект с данным width padding border margin переданного элемента для его ширины или высоты
     getWidthOrHeight: function(element, dimension) {
         if (dimension === "width") {
@@ -576,66 +594,6 @@ let bf = {
     },
     //функция для получения высот и ширин таких элементов как window и document
 
-    //возвращает массив состоящий из всех элементов найденых по селекстором через запятую, примечательно что будет использован оптимальный поиск по дереву DOM для каждого типа селектора
-    //selectors - строка в виде селекторов, можно несколько перечисленных через запятую, к примеру: ".test, a.web, header, nav"
-    //element_fo_search - элемент в котором будет производится поиск всех элементов по селектору
-    //result сюда будем записывать все элементы DOM найденые по соответствующим селекторам
-    return_selectors_arr: function(selectors, element_fo_search = document, result = []) {
-        let selectors_arr = this.string_to_array(selectors, ","); //массив со списком селекторов
-
-        //перебираем все предоставленные селекторы разделённые запятой и записываем их в массив
-        for (let i = 0; i < selectors_arr.length; i++) {
-
-            //возможно селекторы разделены не только запятой но и пробелом, вот так ", ", тогда нужно удалить все пробелы из начала строки
-            //удалятся первые символы будут до тех пор пока ои не перестанут быть пробелами
-            while (selectors_arr[i][0] === " ") {
-                selectors_arr[i] = selectors_arr[i].substring(1); //удаляем пробел вначале строки
-            }
-            //возможно селекторы разделены не только запятой но и пробелом, вот так ", ", тогда нужно удалить все пробелы из начала строки
-
-            let selector = selectors_arr[i], //текущий итерируемый селектор в наборе
-                proverka = /^(#([\w]+)|(\w+)|\.([\w]+))$/.test(selector); //проверяем является ли selector id, tag или class
-
-            //если селекстор сооствествует id, тегу или одиночному классу
-            if (proverka) {
-                //id
-                if (selector.includes("#")) {
-                    let el_fo_id = element_fo_search.getElementById(selector.slice(1)); //элемент найденый по id
-
-                    //если el_fo_id был найден и нее равен null
-                    if (el_fo_id) {
-                        result.push.apply(result, [el_fo_id]); //поскольку первая возможная запись в массив то просто записываем без всяких доп проверок на содержимое массива result
-                    }
-                    //если el_fo_id был найден и нее равен null
-                }
-                //id
-
-                //class
-                else if (selector.includes(".")) {
-                    result = this.return_skleniy_arr(result, element_fo_search.getElementsByClassName(selector.slice(1)));
-                }
-                //class
-
-                //tag
-                else {
-                    result = this.return_skleniy_arr(result, element_fo_search.getElementsByTagName(selector));
-                }
-                //tag
-            }
-            //если селекстор сооствествует id, тегу или одиночному классу
-
-            //если сложный селектор
-            else {
-                result = this.return_skleniy_arr(result, element_fo_search.querySelectorAll(selector));
-            }
-            //если сложный селектор
-        }
-        //перебираем все предоставленные селекторы разделённые запятой и записываем их в массив
-
-        return result; //возвращаем массив со всеми элементами
-    },
-    //возвращает массив состоящий из всех элементов найденых по селекстором через запятую, примечательно что будет использован оптимальный поиск по дереву DOM для каждого типа селектора
-
     //создаёт новый куки
     //name - имя записываемого куки
     //value - значение записываемого кукки
@@ -644,15 +602,16 @@ let bf = {
         //path: '/', //базовый путь по которому куки будут доступны
         //domain: "site.com",//домен дял которого будут действовать куки
         //expires: "Tue, 19 Jan 2038 03:14:07 GMT",//дата истечения куки
-        //"max-age": "604800", //устанавливает время действия куки в секундах, по умолчанию 7 дней
+        "max-age": "604800" //устанавливает время действия куки в секундах, по умолчанию 7 дней
         //secure: true //куки будут переданы только по HTTPS протоколу
     }) {
         //объединяем объекты со значением по умолчанию и переданные пользователем
-        options = Object.assign({
-            path: '/',
-            "max-age": "604800"
-        }, options);
-        //объединяем объекты со значением по умолчанию и переданные пользователем
+
+        let default_options = {
+            path: '/'
+        };
+
+        options = Object.assign({}, default_options, options);//объединяем объекты со значением по умолчанию и переданные пользователем
 
         name = decodeURIComponent(name); //получаем "uswvewvc vw vw vweer" из "uswvewvc%20vw%20vw%20vweer" или "uswvewvc vw vw vweer" из "uswvewvc vw vw vweer"
         name = encodeURIComponent(name); //получаем "uswvewvc%20vw%20vw%20vweer" из "uswvewvc vw vw vweer"
@@ -781,7 +740,7 @@ const KSN_jQuery = {
 
         //для текстовых сетекторов "#test, .class_test>div.tested, header, a[href='/wefewf/ewf']"
         if (typeof selector === "string") {
-            let elements = bf.return_selectors_arr(selector); //возвращаем все найденые элементы в виде массива
+            let elements = this.return_selectors_arr(selector); //возвращаем все найденые элементы в виде массива
 
             //перебираем все элементы elements и записываем их по порядку в объект obj
             for (let i = 0; i < elements.length; i++) {
@@ -826,6 +785,123 @@ const KSN_jQuery = {
     },
     //метод создаёт новый объект с прототипом KSN_jQuery, и заполянет его элементами из elements
 
+    //возвращает массив состоящий из всех элементов найденых по селекстором через запятую, примечательно что будет использован оптимальный поиск по дереву DOM для каждого типа селектора
+    //selectors - строка в виде селекторов, можно несколько перечисленных через запятую, к примеру: ".test, a.web, header, nav"
+    //element_fo_search - элемент в котором будет производится поиск всех элементов по селектору
+    //result сюда будем записывать все элементы DOM найденые по соответствующим селекторам
+    return_selectors_arr: function(selectors, element_fo_search = document, result = []) {
+        let selectors_arr = this.string_to_array(selectors, ","); //массив со списком селекторов
+
+        //перебираем все предоставленные селекторы разделённые запятой и записываем их в массив
+        for (let i = 0; i < selectors_arr.length; i++) {
+
+            //возможно селекторы разделены не только запятой но и пробелом, вот так ", ", тогда нужно удалить все пробелы из начала строки
+            //удалятся первые символы будут до тех пор пока ои не перестанут быть пробелами
+            while (selectors_arr[i][0] === " ") {
+                selectors_arr[i] = selectors_arr[i].substring(1); //удаляем пробел вначале строки
+            }
+            //возможно селекторы разделены не только запятой но и пробелом, вот так ", ", тогда нужно удалить все пробелы из начала строки
+
+            let selector = selectors_arr[i], //текущий итерируемый селектор в наборе
+                proverka = /^(#([\w]+)|(\w+)|\.([\w]+))$/.test(selector); //проверяем является ли selector id, tag или class
+
+            //если селекстор сооствествует id, тегу или одиночному классу
+            if (proverka) {
+                //id
+                if (selector.includes("#")) {
+                    let el_fo_id = element_fo_search.getElementById(selector.slice(1)); //элемент найденый по id
+
+                    //если el_fo_id был найден и нее равен null
+                    if (el_fo_id) {
+                        result.push.apply(result, [el_fo_id]); //поскольку первая возможная запись в массив то просто записываем без всяких доп проверок на содержимое массива result
+                    }
+                    //если el_fo_id был найден и нее равен null
+                }
+                //id
+
+                //class
+                else if (selector.includes(".")) {
+                    result = this.return_skleniy_arr(result, element_fo_search.getElementsByClassName(selector.slice(1)));
+                }
+                //class
+
+                //tag
+                else {
+                    result = this.return_skleniy_arr(result, element_fo_search.getElementsByTagName(selector));
+                }
+                //tag
+            }
+            //если селекстор сооствествует id, тегу или одиночному классу
+
+            //если сложный селектор
+            else {
+                result = this.return_skleniy_arr(result, element_fo_search.querySelectorAll(selector));
+            }
+            //если сложный селектор
+        }
+        //перебираем все предоставленные селекторы разделённые запятой и записываем их в массив
+
+        return result; //возвращаем массив со всеми элементами
+    },
+    //возвращает массив состоящий из всех элементов найденых по селекстором через запятую, примечательно что будет использован оптимальный поиск по дереву DOM для каждого типа селектора
+
+    //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект в котором будут только те элементы которые встречаются в обоих массивах
+    //clone_clean - если true то вернёт массив без одинаковых значений
+    return_clone_elements_arr: function(arr_1, arr_2, clone_clean = true) {
+        let massiv_1 = Array.isArray(arr_1) ? arr_1 : this.toArray(arr_1), //если вдруг это не массив то преобразуем в массив
+            massiv_2 = Array.isArray(arr_2) ? arr_2 : this.toArray(arr_2), //если вдруг это не массив то преобразуем в массив
+            //перебираем массив massiv_1 для поиска совпадающих значений с массивом massiv_2
+            result = massiv_1.filter((item, index) => {
+                return massiv_2.indexOf(item) !== -1; //если indexOf вернул не -1 то функция вернёт true и текущий элемнт будет добавлен в массив result так как он присутствует в обоих массивах
+            });
+        //перебираем массив massiv_1 для поиска совпадающих значений с массивом massiv_2
+
+        return clone_clean ? this.return_no_clone_arr(result) : result; //удаляем повоторяющиеся элементы и возвращаем новый объект
+    },
+    //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект в котором будут только те элементы которые встречаются в обоих массивах
+
+    //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект содержащий все элементы обеих массивов
+    //clone_clean - если true то вернёт массив без одинаковых значений
+    //result = [] массив в который будем записывать все элементы
+    return_skleniy_arr: function(arr_1, arr_2, clone_clean = true, result = []) {
+        result.push.apply(result, arr_1); //записываем данные из arr_1
+        result.push.apply(result, arr_2); //записываем данные из arr_2
+        return clone_clean ? this.return_no_clone_arr(result) : result;
+    },
+    //получает на вход два массива (массивоподобных объекта) и в результате возвращает объект содержащий все элементы обеих массивов
+
+    //получает на вход массив (массивоподобный объект), после этого удаляет в нём одинаковые значения и возвращает результирующий объект с новой длинной
+    return_no_clone_arr: function(arr) {
+        //let result = this.toArray(new Set(arr));//здесь применяется метод set который возвращает только уникальные значения
+        let massiv = Array.isArray(arr) ? arr : this.toArray(arr), //если вдруг это не массив то преобразуем в массив
+            result = massiv.filter((item, index) => { return massiv.indexOf(item) === index }); //с помошью фильтрующего метода Array возвращаем массив в котором будт только элементы удовлетворяющие условию massiv.indexOf(item) === index, т.е. если будет повторяющееся значение его индекс будет равен не его индексу , а первому такому элементу в массиве, следовательно этот элемент повторно не будет включаться
+        return result;
+    },
+    //получает на вход массив (массивоподобный объект), после этого удаляет в нём одинаковые значения и возвращает результирующий объект с новой длинной
+
+    //очищает массив arr от значений values
+    return_cleaned_of_values: function(values, arr) {
+        let cleaned = Array.isArray(values) ? values : this.toArray(values), //если вдруг это не массив то преобразуем в массив
+            massiv = Array.isArray(arr) ? arr : this.toArray(arr), //если вдруг это не массив то преобразуем в массив
+            result = massiv.filter((item) => !cleaned.includes(item));
+        //result = massiv.filter((item) => { return cleaned.indexOf(item) < 0 });тоже самое но с помощью метода indexOf
+        return result;
+    },
+    //очищает массив arr от значений values
+
+    //преобразует строку в массив разделитель separator
+    //++
+    string_to_array: function(string, separator = " ") {
+        return string.split(separator); //возвращаем массив
+    },
+
+    //преобразуем массивоподобные объекты в separator
+    //++
+    toArray: function(data) {
+        return Array.from(data);
+    },
+    //преобразуем массивоподобные объекты в массивы
+
     //производит итерации над объектами и для каждого итирируемого элемента объекта вызиывает функцию callback
     //arg_1 - объект или функция
     //arg_2 - функция обратного вызова
@@ -834,11 +910,13 @@ const KSN_jQuery = {
         let obj = typeof arg_1 === "function" ? this : arg_1, //если в arg_1 передана функция то obj будет this
             callback = typeof arg_1 === "function" ? arg_1 : arg_2; //если в arg_1 передана функция то callback будет arg_1
 
-        obj = Array.isArray(obj) ? obj : bf.toArray(obj); //преобразуем в массив для итераций если нужно
+        obj = Array.isArray(obj) ? obj : this.toArray(obj); //преобразуем в массив для итераций если нужно
 
         //перебираем массив с итерируемыми элементами
         for (let i = 0; i < obj.length; i++) {
-            callback.call(obj[i], i, obj[i]); //дял каждого итирируемого элемента вызываем функцию обратиного вызова в которую в качестве this передаём объект текущего итериремого элемента , а в качестве аргументов передаём индекс и значение в массиве соответственно
+            let fu_result = callback.call(obj[i], i, obj[i]); //дял каждого итирируемого элемента вызываем функцию обратиного вызова в которую в качестве this передаём объект текущего итериремого элемента , а в качестве аргументов передаём индекс и значение в массиве соответственно
+
+            if (fu_result === false) break; //если функция обратного вызова вернула false то прерываем цык перебра элементов
         }
         //перебираем массив с итерируемыми элементами
 
@@ -852,7 +930,7 @@ const KSN_jQuery = {
     //options_event - сюда нужно передать объект с обциями для данного слушателя
     //custom_settings - настрйоки которые будт переданы в кастомные события созданые пользователем такие как swipe
     on: function(event, callback, options_event, custom_settings = {}, elements = this) {
-        let events = bf.string_to_array(event); //преобрзуем строковый список в масив
+        let events = this.string_to_array(event); //преобрзуем строковый список в масив
 
         options_event = Object.assign({}, { //объединяем параметры пользователя с параметрами по умолчанию
             passive: true
@@ -878,7 +956,7 @@ const KSN_jQuery = {
     //callback - функция которая должна быть отключена для данных слушателей событий
     //custom_settings - настрйоки которые будт переданы в кастомные события созданые пользователем такие как swipe
     off: function(event, callback, custom_settings = {}, elements = this) {
-        let events = bf.string_to_array(event); //преобрзуем строковый список в масив
+        let events = this.string_to_array(event); //преобрзуем строковый список в масив
 
         for (let i = 0; i < elements.length; i++) {
             for (let b = 0; b < events.length; b++) {
@@ -900,7 +978,7 @@ const KSN_jQuery = {
     //elements - один или более элементов атрибуты attributs в которых нужно удалить
     //++
     removeAttr: function(attributs, elements = this) {
-        attributs = bf.string_to_array(attributs); //преобрзуем строковый список в массив
+        attributs = this.string_to_array(attributs); //преобрзуем строковый список в массив
 
         //перебираем атрибуты для удаления
         for (let b = 0; b < attributs.length; b++) {
@@ -954,7 +1032,7 @@ const KSN_jQuery = {
     //++
     addClass: function(class_name = null, elements = this) {
         if (class_name === null) { return this; } //если не преданы именна классов завершаем функцию
-        let classes = bf.string_to_array(class_name); //преобрзуем строковый список в масив
+        let classes = this.string_to_array(class_name); //преобрзуем строковый список в масив
 
         //перебираем все классы на добавление
         for (let i = 0; i < classes.length; i++) {
@@ -975,7 +1053,7 @@ const KSN_jQuery = {
     //++
     removeClass: function(class_name = null, elements = this) {
         if (class_name === null) { return this; } //если не преданы именна классов завершаем функцию
-        let classes = bf.string_to_array(class_name); //преобрзуем строковый список в масив
+        let classes = this.string_to_array(class_name); //преобрзуем строковый список в масив
 
         //перебираем все классы не удаление
         for (let i = 0; i < classes.length; i++) {
@@ -996,7 +1074,7 @@ const KSN_jQuery = {
     //++
     hasClass: function(class_name = null, elements = this) {
         if (class_name === null) { return false; } //если не преданы именна классов завершаем функцию
-        let classes = bf.string_to_array(class_name); //преобрзуем строковый список в масив
+        let classes = this.string_to_array(class_name); //преобрзуем строковый список в масив
 
         //перебираем все элементы классы в которых нужно проверить на наличие
         for (let b = 0; b < elements.length; b++) {
@@ -1031,7 +1109,7 @@ const KSN_jQuery = {
     //++
     toggleClass: function(class_name = null, elements = this) {
         if (class_name === null) { return this; } //если не преданы именна классов завершаем функцию
-        let classes = bf.string_to_array(class_name); //преобрзуем строковый список в масив
+        let classes = this.string_to_array(class_name); //преобрзуем строковый список в масив
 
         //перебираем все классы для переключения (добавить/удалить)
         for (let i = 0; i < classes.length; i++) {
@@ -1093,7 +1171,7 @@ const KSN_jQuery = {
 
     //ширина элемента и padding без учёта margin border
     //value - значение которое нужно задать
-    innerWidth: function(value = null, elements = this) {
+    /*innerWidth: function(value = null, elements = this) {
 
         let result = bf.win_doc_wh(elements[0], "Width", "innerWidth"); //проверям если это window или document
         if (result !== false) {
@@ -1132,7 +1210,7 @@ const KSN_jQuery = {
         //если передано значение для установки ширины
 
         return mrg ? data.width + data.padding + data.border + data.margin : data.width + data.padding + data.border; //в зависимости от того нужно ли учитывать margin возвращаем ширину элемента с его padding и border и при необходимости c margin
-    },
+    },*/
 
     //высота самого элемента без учёта margin border padding
     //value - значение которое нужно задать
@@ -1277,18 +1355,18 @@ const KSN_jQuery = {
         for (let i = 0; i < elements.length; i++) {
             let temp_arr = [], //тут будут хранится временные данные для одной итерации
                 parent = elements[i].parentNode; //родитель текущего итерируемого элемента
-            temp_arr = bf.return_skleniy_arr(temp_arr, parent.children); //записываем во временный массив всех соседей текущего итерируемого элемента включая его самого
+            temp_arr = this.return_skleniy_arr(temp_arr, parent.children); //записываем во временный массив всех соседей текущего итерируемого элемента включая его самого
 
             //если задан селектор для фильтрации соседей на выходе
             if (selector) {
-                let all_children_element = bf.return_selectors_arr(selector, parent); //все потомки родителя текущего итерируемого элемента
-                temp_arr = bf.return_clone_elements_arr(all_children_element, temp_arr); //получем элементы которые находятся во временном массиве и удовлетворяют селекторам
+                let all_children_element = this.return_selectors_arr(selector, parent); //все потомки родителя текущего итерируемого элемента
+                temp_arr = this.return_clone_elements_arr(all_children_element, temp_arr); //получем элементы которые находятся во временном массиве и удовлетворяют селекторам
             }
             //если задан селектор для фильтрации соседей на выходе
 
-            temp_arr = bf.return_cleaned_of_values([elements[i]], temp_arr); //удаляем из временного объекта сам итерируемый этемент, так как мы ищем его сосдей, а не его самого
+            temp_arr = this.return_cleaned_of_values([elements[i]], temp_arr); //удаляем из временного объекта сам итерируемый этемент, так как мы ищем его сосдей, а не его самого
 
-            result = bf.return_skleniy_arr(result, temp_arr); //записываем в конечный результирующий объект данные из временно объекта текущей итерации
+            result = this.return_skleniy_arr(result, temp_arr); //записываем в конечный результирующий объект данные из временно объекта текущей итерации
         };
         //для каждого элемента в elements ищем соседей
 
@@ -1307,15 +1385,15 @@ const KSN_jQuery = {
             //если заданы селекторы по которому фильтровать прямых потомков
             if (selector) {
                 let childrens = elements[i].children, //все прямые потомки текущего элемента
-                    all_elements = bf.return_selectors_arr(selector, elements[i]), //находим все элементы в текущем элементе которые удовлетворяют селекторам
-                    filter_elements = bf.return_clone_elements_arr(all_elements, childrens); //находим элементы которые находятся и в прямых потомках текущего элемента и удовлетворяют селекторам
-                result = bf.return_skleniy_arr(result, filter_elements); //записываем элементы в результат
+                    all_elements = this.return_selectors_arr(selector, elements[i]), //находим все элементы в текущем элементе которые удовлетворяют селекторам
+                    filter_elements = this.return_clone_elements_arr(all_elements, childrens); //находим элементы которые находятся и в прямых потомках текущего элемента и удовлетворяют селекторам
+                result = this.return_skleniy_arr(result, filter_elements); //записываем элементы в результат
             }
             //если заданы селекторы по которому фильтровать прямых потомков
 
             //фильтр прямых потомков не задан
             else {
-                result = bf.return_skleniy_arr(result, elements[i].children); //записываем в результат всех прямых потомков каждого элемента
+                result = this.return_skleniy_arr(result, elements[i].children); //записываем в результат всех прямых потомков каждого элемента
             }
             //фильтр прямых потомков не задан
         };
@@ -1333,8 +1411,8 @@ const KSN_jQuery = {
 
         //перебираем все элементы elements потомков которых нужно найти
         for (let i = 0; i < elements.length; i++) {
-            let all_children = bf.return_selectors_arr(selector, elements[i]); //получаем всех потомков текущего итерируемого элемента
-            result = bf.return_skleniy_arr(result, all_children); //записываем в результирующий массив всех найденых и соответствующих селекторам потомков
+            let all_children = this.return_selectors_arr(selector, elements[i]); //получаем всех потомков текущего итерируемого элемента
+            result = this.return_skleniy_arr(result, all_children); //записываем в результирующий массив всех найденых и соответствующих селекторам потомков
         }
         //перебираем все элементы elements потомков которых нужно найти
 
@@ -1354,8 +1432,8 @@ const KSN_jQuery = {
 
         //если задан селектор для отбора
         if (selector) {
-            let all_selectors = bf.return_selectors_arr(selector), //массив со всеми элементами удовлетворяющими селектор selector
-                filter_result = bf.return_clone_elements_arr(result, all_selectors); //получаем массив в который будут записаны одинаковые занчения найденные в массивах result и all_selectors
+            let all_selectors = this.return_selectors_arr(selector), //массив со всеми элементами удовлетворяющими селектор selector
+                filter_result = this.return_clone_elements_arr(result, all_selectors); //получаем массив в который будут записаны одинаковые занчения найденные в массивах result и all_selectors
             return this.construct_new_ksn(filter_result); //возвращаем объект с отфильтрованными родительскими элементами
         }
         //если задан селектор для отбора
@@ -1378,13 +1456,13 @@ const KSN_jQuery = {
                 el = el.parentNode; //присваеваем текущему итерируемому элементу el его родителя чтоб обеспечить подъём вверх по DOM дереву элементов
             }
             //цикл while будет выпоолняться пока мы не доберёмся до родительского элемента document
-            result = bf.return_no_clone_arr(result); //чистим результирующий массив от повторяющихся элементов
+            result = this.return_no_clone_arr(result); //чистим результирующий массив от повторяющихся элементов
         }
         //перебираем все элементы elements
 
         //если задан селектор для отбора
         if (selector) {
-            return this.construct_new_ksn(bf.return_clone_elements_arr(result, bf.return_selectors_arr(selector))); //возвращаем объект с отфильтрованными родительскими элементами по селекторам
+            return this.construct_new_ksn(this.return_clone_elements_arr(result, this.return_selectors_arr(selector))); //возвращаем объект с отфильтрованными родительскими элементами по селекторам
         }
         //если задан селектор для отбора
 
@@ -1428,13 +1506,40 @@ const KSN_jQuery = {
     //возвращает последний элемент в объекте elements
 
     //анимирует элементы
-    //styles - объект со стилями и значениями которые нужно анимировать {"margin-bottom": "-=20%","width": "+=20px","margin-top": "100px","opacity": "0.1"}
+    //data_fo_anim - объект со стилями и значениями которые нужно анимировать {"margin-bottom": "-=20%","width": "+=20px","margin-top": "100px","opacity": "0.1"}
+
+    // [{
+    //         "elements": ksn_el,
+    //         "margin-bottom": "-=20%",
+    //         "width": "+=20px",
+    //         "margin-top": "100px",
+    //         "opacity": "0.1"
+    //     },
+    //     {
+    //         "elements": ksn_el,
+    //         "margin-bottom": "-=20%",
+    //         "width": "+=20px",
+    //         "margin-top": "100px",
+    //         "opacity": "0.1"
+    //     },
+    //     {
+    //         "elements": ksn_el,
+    //         "margin-bottom": "-=20%",
+    //         "width": "+=20px",
+    //         "margin-top": "100px",
+    //         "opacity": "0.1"
+    //     }
+    // ]//можно передать в таком виде чтоб одновременно анимировать несколько элементов разынми стилями, ksn_el в данном случае это отдельный элемет или группа элементов обёрнутая в объект ksn
+
     //duration - лительность анимации в милисекундах
     //timing - указывает как с течением времени будет меняться анимация или функцией или названием уже готовой функции
     //callback - будет вызвана по завершении анимации
-    animate: function(styles, duration = 400, timing = "linear", callback = null) {
+    animate: function(data_fo_anim, duration = 400, timing = "linear", callback = null) {
         let timing_algoritm_chenge, //сюда будет сохранена функция котороя будет определять текущее состояние анимации с течением времени
             //список название временных функций с их конструкторами
+            elements = this, //текущие элементы для анимации нужно чтоб обратится к этому this внутри других функций
+            final_data = [], //будет хранить все уже просчитанные значение стилей для анимации для каждого элемента который нужно анимировать
+            animate_complit = false, //сигнализирует об окончании анимации
             timing_fu_list = {
                 "linear": function(remaning_time) {
                     return remaning_time;
@@ -1454,118 +1559,323 @@ const KSN_jQuery = {
             };
         //список название временных функций с их конструкторами
 
-        //находим из списка нжный нам конструктор временнйо функции
+        //находим из списка нужный нам конструктор временнйо функции
         for (let func_name in timing_fu_list) {
             if (func_name === timing) timing_algoritm_chenge = timing_fu_list[func_name];
         }
-        //находим из списка нжный нам конструктор временнйо функции
+        //находим из списка нужный нам конструктор временнйо функции
 
         if (typeof timing === "function") timing_algoritm_chenge = timing; //если в качестве аргумента timing передана функция то используем её для расчёта текущего состояния анимации
 
-        //перебираем все элементы которые нужно анимировать
-        this.each(function() {
-            let el = $(this), //текущий элемент к которому будет применена анимация
-                data_styles = [],
-                rendering_default = function(progress) {
+        //получаем на вход элемент и набор стилей значение для которых он должен получить и вычислить их значение после анимации
+        //el - элемент стили которого мы будем узнать в формате $(dom_element) т.е. ksn объект
+        //styles - стили которые нам нужно вычислить в формате {"margin-bottom": "-=20%","width": "+=20px","margin-top": "100px","opacity": "0.1"}
+        let calculate_el_styles = function(el, styles) {
+                let data_styles = [];
 
-                    //перебираем все css стили из объекта styles
-                    data_styles.forEach((data_item) => {
-                        let sdvig = data_item.start_value + (data_item.shift_value * progress); //текущее изменение значения
-                        el.css(data_item.property, sdvig + data_item.units); //задаём элементу обновлённое значение текущего css свойства
-                    })
-                    //перебираем все css стили из объекта styles
-                },
-                start_time = performance.now(); //записываем время начала анимации, в качестве точки отсчёта будем брать время прошедшее с момента создания данного документа
+                //перебираем все css стили из объекта styles и записываем для каждого данные в data_styles объект
+                for (let property in styles) {
 
-            //перебираем все css стили из объекта styles и записываем для каждого данные в data_styles объект
-            for (let property in styles) {
+                    if (property === "elements") continue; //если в свойстве передан элемент переходим сразу к следующей итерации
 
-                let start_value = Number(el.css(property).replace("px", "")), //числовое занчение свойства в начльный момент времени
-                    finall_value = Number(styles[property].replace(/^(\+|-)=|px|%/g, "")), //числовое занчение свойства до которого нужно анимировать
-                    units = styles[property].includes("px") ? "px" : (styles[property].includes("%") ? "%" : null), //единицы измерения которые переданы для значения css свойства px или %
-                    increase = styles[property].includes("+=") ? true : false, //если задано увеличить исходное занчение свойство на данную величину
-                    decrease = styles[property].includes("-=") ? true : false; //если задано уменьшить исходное занчение свойство на данную величину
+                    let start_value = Number(el.css(property).replace("px", "")), //числовое занчение свойства в начльный момент времени
+                        finall_value = Number(styles[property].replace(/^(\+|-)=|px|%/g, "")), //числовое занчение свойства до которого нужно анимировать
+                        units = styles[property].includes("px") ? "px" : (styles[property].includes("%") ? "%" : null), //единицы измерения которые переданы для значения css свойства px или %
+                        increase = styles[property].includes("+=") ? true : false, //если задано увеличить исходное занчение свойство на данную величину
+                        decrease = styles[property].includes("-=") ? true : false; //если задано уменьшить исходное занчение свойство на данную величину
 
-                //если значение указанов  процентах
-                if (units === "%") {
-                    //свойства исключения процентные значение которых беррутся у родителя от других свойств
-                    let exceptions = {
-                            "margin": "width",
-                            "margin-top": "width",
-                            "margin-right": "width",
-                            "margin-bottom": "width",
-                            "margin-left": "width",
-                            "padding": "width",
-                            "padding-top": "width",
-                            "padding-right": "width",
-                            "padding-bottom": "width",
-                            "padding-left": "width",
-                            "line-height": "font-size",
-                        },
+                    //если значение указанов  процентах
+                    if (units === "%") {
                         //свойства исключения процентные значение которых беррутся у родителя от других свойств
+                        let exceptions = {
+                                "margin": "width",
+                                "margin-top": "width",
+                                "margin-right": "width",
+                                "margin-bottom": "width",
+                                "margin-left": "width",
+                                "padding": "width",
+                                "padding-top": "width",
+                                "padding-right": "width",
+                                "padding-bottom": "width",
+                                "padding-left": "width",
+                                "line-height": "font-size",
+                                "left": "width",
+                                "right": "width",
+                                "top": "height",
+                                "bottom": "height"
+                            },
+                            //свойства исключения процентные значение которых беррутся у родителя от других свойств
 
-                        parent_prop_value = exceptions.hasOwnProperty(property) ? Number(el.parent().css(exceptions[property]).replace("px", "")) : Number(el.parent().css(property).replace("px", "")); //получаем значение этого свойства у родтельского элемента
+                            parent_prop_value = exceptions.hasOwnProperty(property) ? Number(el.parent().css(exceptions[property]).replace("px", "")) : Number(el.parent().css(property).replace("px", "")); //получаем значение этого свойства у родтельского элемента
 
-                    finall_value = (parent_prop_value * finall_value) / 100; //конечное значение свойства
-                    units = "px"; //меняем единицы измерения на пиксели
+                        finall_value = (parent_prop_value * finall_value) / 100; //конечное значение свойства
+                        units = "px"; //меняем единицы измерения на пиксели
+                    }
+                    //если значение указанов  процентах
+
+                    //если задано увеличить исходное занчение свойство на данную величину
+                    if (increase) {
+                        finall_value = start_value + finall_value;
+                    }
+                    //если задано увеличить исходное занчение свойство на данную величину
+
+                    //если задано уменьшить исходное занчение свойство на данную величину
+                    if (decrease) {
+                        finall_value = start_value - finall_value;
+                    }
+                    //если задано уменьшить исходное занчение свойство на данную величину
+
+                    let shift_value = finall_value - start_value, //числовое занчение на сколько по итогу нужно изменить свойство элемента
+                        data = {
+                            "property": property, //название css свойства
+                            "start_value": start_value, //числовое занчение свойства в начльный момент времени
+                            "finall_value": finall_value, //числовое занчение свойства в конце анимации
+                            "shift_value": shift_value, //числовое занчение на сколько по итогу нужно изменить свойство элемента
+                            "units": units, //единицы измерения
+                            "increase": increase,
+                            "decrease": decrease
+                        };
+
+                    data_styles.push(data); //записываем в конец массива data_styles
                 }
-                //если значение указанов  процентах
+                //перебираем все css стили из объекта styles и записываем для каждого данные в data_styles объект
 
-                //если задано увеличить исходное занчение свойство на данную величину
-                if (increase) {
-                    finall_value = start_value + finall_value;
-                }
-                //если задано увеличить исходное занчение свойство на данную величину
+                return data_styles;
+            },
+            //получаем на вход элемент и набор стилей значение для которых он должен получить и вычислить их значение после анимации
 
-                //если задано уменьшить исходное занчение свойство на данную величину
-                if (decrease) {
-                    finall_value = start_value - finall_value;
-                }
-                //если задано уменьшить исходное занчение свойство на данную величину
+            //записываем а массив final_data данные для каждой анимации по каждому набору элементов
+            calculate_final_data_fo_anim = function(data_fo_anim) {
 
-                let shift_value = finall_value - start_value, //числовое занчение на сколько по итогу нужно изменить свойство элемента
-                    data = {
-                        "property": property, //название css свойства
-                        "start_value": start_value, //числовое занчение свойства в начльный момент времени
-                        "finall_value": finall_value, //числовое занчение свойства в конце анимации
-                        "shift_value": shift_value, //числовое занчение на сколько по итогу нужно изменить свойство элемента
-                        "units": units, //единицы измерения
-                        "increase": increase,
-                        "decrease": decrease
+                //заполняем массив final_data сформированными данными
+                let create_final_arr = function(el, data_fo_anim) {
+                    let data = {
+                        "elements": el,
+                        "styles_data": calculate_el_styles(el, data_fo_anim)
                     };
 
-                data_styles.push(data); //записываем в конец массива data_styles
-            }
-            //перебираем все css стили из объекта styles и записываем для каждого данные в data_styles объект
+                    final_data.push(data);
+                };
+                //заполняем массив final_data сформированными данными
 
-            let start = Number(el.css("width").replace("px", ""));
-
-            //начинаем перерисовку элемента по заданному функцией алгоритму rendering_fu
-            requestAnimationFrame(function animate(time) {
-                let past_time = (time - start_time) / duration; //получаем значение пройденного времени с начала анимации с учётом её длительности, значение начинается с 0 - начало анимации, и заканчивается 1 - конец анимации. т.е. если прошла треть анимации past_time = 0,3333, если вдруг значение получилось меньше нуля то делаем его нулём
-                //загоняем past_time в пределы от 0 до 1
-                if (past_time < 0) past_time = 0;
-                if (past_time > 1) past_time = 1;
-                //загоняем past_time в пределы от 0 до 1
-
-                let progress = timing_algoritm_chenge(past_time); // вычисляем текущее состояние анимации в зависимости от пройденного времени
-
-                rendering_default(progress); //трисовываем анимацию в зависимости от текущего прогресса
-
-                if (past_time !== 1) {
-                    requestAnimationFrame(animate); //запускаем отрисовку этой анимации о тех пор пока условное время past_time пройденное с начала анимаци не станет равным 1, т.е. до тех пор пока анимация не закончится
-                } else {
-                    if (callback) callback(); //если занан колбек в конце анимации запускаем его
+                //если передан массив значит там набор анимаций для разных элементов с разными анимируемыми стилями
+                if (Array.isArray(data_fo_anim) === true) {
+                    //перебираем массив чтоб и записываем для кажого набора элемента свою анимацию
+                    data_fo_anim.forEach((el_data) => {
+                        create_final_arr(el_data.elements, el_data);
+                    });
+                    return;
                 }
+                //если передан массив значит там набор анимаций для разных элементов с разными анимируемыми стилями
 
-            });
-            //начинаем перерисовку элемента по заданному функцией алгоритму rendering_fu
-        });
-        //перебираем все элементы которые нужно анимировать
+                create_final_arr(elements, data_fo_anim); //заполняем массив final_data сформированными данными
 
-        return this; //возвращаем исходный объект с набором элементов для анимирования
+            },
+            //записываем а массив final_data данные для каждой анимации по каждому набору элементов
+
+
+            //отвечает за изменение стилей элемента
+            rendering_animation = function(progress) {
+                //перебираем каждую анимацию из массива и выполянем её для каждого набора элемента
+                final_data.forEach((data_item) => {
+                    data_item.styles_data.forEach((style) => {
+                        let sdvig = style.start_value + (style.shift_value * progress); //текущее изменение значения
+                        data_item.elements.css(style.property, sdvig + style.units); //задаём элементу обновлённое значение текущего css свойства
+                    });
+                });
+                //перебираем каждую анимацию из массива и выполянем её для каждого набора элемента
+            },
+            //отвечает за изменение стилей элемента
+
+            //функция для анимирования всех нужных стилей элемента
+            animate_init = function() {
+                let start_time = performance.now(); //записываем время начала анимации, в качестве точки отсчёта будем брать время прошедшее с момента создания данного документа
+
+                //начинаем перерисовку элемента по заданному функцией алгоритму rendering_fu
+                requestAnimationFrame(function animate(time) {
+                    let past_time = (time - start_time) / duration; //получаем значение пройденного времени с начала анимации с учётом её длительности, значение начинается с 0 - начало анимации, и заканчивается 1 - конец анимации. т.е. если прошла треть анимации past_time = 0,3333, если вдруг значение получилось меньше нуля то делаем его нулём
+                    //загоняем past_time в пределы от 0 до 1
+                    if (past_time < 0) past_time = 0;
+                    if (past_time > 1) past_time = 1;
+                    //загоняем past_time в пределы от 0 до 1
+
+                    let progress = timing_algoritm_chenge(past_time); // вычисляем текущее состояние анимации в зависимости от пройденного времени
+
+                    rendering_animation(progress); //отрисовываем анимацию в зависимости от текущего прогресса
+
+                    if (past_time !== 1) {
+                        requestAnimationFrame(animate); //запускаем отрисовку этой анимации о тех пор пока условное время past_time пройденное с начала анимаци не станет равным 1, т.е. до тех пор пока анимация не закончится
+                    } else {
+                        animate_complit = true; //помечаем что анимация успешно завершилась
+                        if (callback) callback(); //если занан колбек в конце анимации запускаем его
+                    }
+
+                });
+                //начинаем перерисовку элемента по заданному функцией алгоритму rendering_fu
+            };
+        //функция для анимирования всех нужных стилей элемента
+
+        calculate_final_data_fo_anim(data_fo_anim); //записываем а массив final_data данные для каждой анимации по каждому набору элементов
+
+        animate_init(); //запускаем анимацию передав в неё все необходиме  данные
+
+        return new Promise((resolve, reject) => {
+            bf.wait(() => { return animate_complit; }, true, (duration / 1000) + 5).then(() => { resolve() }).catch(() => { reject() });
+        }); //возвращаем промис
     },
     //анимирует элементы
+
+    //проверяем видимость элемента для заданых элементов, т.е. находится ли элемент какой-то своей частью в пределах проверяемх блоков, или в пределах окна браузера (части экра которую видит пользователь)
+    //ВАЖНО:если нужно определить виден ли элемент на экране используем where_search = $(window)
+    //callback - функция которая будет вызвана для каждого отслеживаемого элемента и ей в качестве параметров будут переданы два значения: 
+    //1)target - текущий отслеживаемый элемент
+    //2)el_fo_search - текущий элемент на границах которого зафиксированно соответствие условиям обнаружения
+    //where_search - элемент или набор элементов для которых мы пытаемся обнаружить полное или частичное присутствие каждого элемента из this, если хоть один элемент не удовлетворяет условиям, приписанным в settings, присутствия в границах элемента where_search то вся функция  будет прервана и вернёт false
+    //settings - настройки для управления обнаружением элементов
+    check_visible: function(callback = null, where_search = $(window), settings = {}) {
+
+        let target_elements = this, //эти элементы мы отслеживаем для определения пересечния границ элементов where_search
+            result = true, //если будет false то значить элемент не удовлетворяем условиям обнаружения
+            //настройки по умолчанию
+            default_settings = {
+                sensing_distance: { //растояние в пикселях на котором сработает обнаружение элемента в границах элементов where_search, может быть как положительным так и отрицательным значение, если к пример 200px то обнаружение элемента в границах элементов where_search будет сигнализированно за 200px до пересечения искомой границы элементов where_search  (простыми словами мы как бы увеличиваем или уменьшаем границы элементов where_search в пределах которых будет осуществялтся поиск элемента)
+                    top: 0, //растояние в пикселях от верхней границы элементов where_search при котором произойдёт обнаружение вхождение отслеживаемого элемента в границы элементов where_search с верхнего направления
+                    right: 0,
+                    bottom: 0,
+                    left: 0
+                },
+                search_dir: { //указывает в каких направлениях мы ищем пересечение границ элементов where_search отслеживаемым элементом
+                    //ПРИМЕЧАНИЕ: данные значение НЕ будут учитываться если нужно обнаружить полное присутствие элемента в элементах where_search
+                    top: true, //элемент будет найден тогда когда пересечёт верхнюю границу элементов where_search, если false не учитывает пересечение границ элементов where_search в этом направлении
+                    right: true,
+                    bottom: true,
+                    left: true
+                },
+
+                //настройки для обнаружения полного присутствия элемента в границах элементов where_search
+                fully_inner_status: false, //учитывать только полное присутствие искомого элемента в границах элементов where_search 
+                fully_inner_dirs: { //в каких плоскостях учитыватья полное вхождение
+                    //ПРИМЕЧАНИЕ: не будет учитываться если fully_inner_status = false, т.е. не нужно обнаруживать полное вхождение
+                    vertical: true, //учитывать только когда элемент находится в вертикальных предаелах обнаружения в границах элементов where_search
+                    gorisontal: true
+                }
+                //настройки для обнаружения полного присутствия элемента в границах элементов where_search
+            },
+            //настройки по умолчанию
+
+            window_pageYOffset = window.pageYOffset, //присваеваем чтоб обращаться к локальным переменным
+            window_pageXOffset = window.pageXOffset;
+
+        settings = Object.assign({}, default_settings, settings); // настройки по умолчанию объединяем и заменяем настройками пользователя
+
+        //выполяняем проверку для каждого отслеживаемого элемента
+        target_elements.each(function() {
+            if (!result) return false; //если было хоть одно не соответствие то прерываем дальнейший перебор и завершаем функцию
+
+            let target = this, //текущий искомый элемент
+                target_position = target.getBoundingClientRect(), //получаем объект с поизициями отслеживаемого элемента
+
+                //позиции элемента относительно всего документа
+                target_data = {
+                    top: window_pageYOffset + target_position.top,
+                    right: window_pageXOffset + target_position.right,
+                    bottom: window_pageYOffset + target_position.bottom,
+                    left: window_pageXOffset + target_position.left
+                };
+            //позиции элемента относительно всего документа
+
+            //перебираем все элементы в которых мы ищем пересечение границ текущего искомого элемента target
+            where_search.each(function() {
+                let el_fo_search = this, //элемент в котором будем проводить поиск
+
+                    //позиции элемента в котором будем искать пересечение границ
+                    el_fo_search_position = el_fo_search === window ? {
+                        top: window_pageYOffset,
+                        right: window_pageXOffset + document.documentElement.clientWidth,
+                        bottom: window_pageYOffset + document.documentElement.clientHeight,
+                        left: window_pageXOffset
+                    } : {
+                        top: window_pageYOffset + el_fo_search.getBoundingClientRect().top,
+                        right: window_pageXOffset + el_fo_search.getBoundingClientRect().right,
+                        bottom: window_pageYOffset + el_fo_search.getBoundingClientRect().bottom,
+                        left: window_pageXOffset + el_fo_search.getBoundingClientRect().left
+                    };
+                //позиции элемента в котором будем искать пересечение границ
+
+                //условно увеличиываем/уменьшаем границы элемента where_search в пределах которых будет происходить обнаружение
+                el_fo_search_position.top = el_fo_search_position.top - settings.sensing_distance.top; //меняем значение верхней позиции элемента where_search чтоб пересечение или вхождение в его границы считалось раньше или позже в зависимости от знака пользовательского значение указанного в настройках
+                el_fo_search_position.right = el_fo_search_position.right + settings.sensing_distance.right;
+                el_fo_search_position.bottom = el_fo_search_position.bottom + settings.sensing_distance.bottom;
+                el_fo_search_position.left = el_fo_search_position.left - settings.sensing_distance.left;
+                //условно увеличиываем/уменьшаем границы элемента where_search в пределах которых будет происходить обнаружение
+
+                //если нужно определить когда элемент полностью находится в нужных плоскостях элемента where_search ++
+                if (settings.fully_inner_status) {
+                    if (settings.fully_inner_dirs.vertical && settings.fully_inner_dirs.gorisontal) { //элемент должен быть виден полностью и по вертикали и по горизонтали ++
+                        if (el_fo_search_position.top > target_data.top ||
+                            el_fo_search_position.right < target_data.right ||
+                            el_fo_search_position.bottom < target_data.bottom ||
+                            el_fo_search_position.left > target_data.left) return result = false; //если элемент не видно, помечаем что уже неудовлетворили хотяб одному условию и можно прерывать дальнейшие проверки и прерываем текущий цикл each
+
+                        if (callback) callback(target, el_fo_search); //выполняем callback на успешное обнаружение элемента, в параметрах передаём элемент который отследили target и элемент в котором отслеживали el_fo_search
+                    } else if (settings.fully_inner_dirs.vertical) { //элемент должен быть виден полностью по вертикали ++
+                        if (el_fo_search_position.top > target_data.top ||
+                            el_fo_search_position.bottom < target_data.bottom) return result = false; //если элемент не видно, помечаем что уже неудовлетворили хотяб одному условию и можно прерывать дальнейшие проверки и прерываем текущий цикл each
+
+                        if (callback) callback(target, el_fo_search); //выполняем callback на успешное обнаружение элемента, в параметрах передаём элемент который отследили target и элемент в котором отслеживали el_fo_search
+
+                    } else if (settings.fully_inner_dirs.gorisontal) { //элемент должен быть виден полностью по горизонтали ++
+                        if (el_fo_search_position.right < target_data.right ||
+                            el_fo_search_position.left > target_data.left) return result = false; //если элемент не видно, помечаем что уже неудовлетворили хотяб одному условию и можно прерывать дальнейшие проверки и прерываем текущий цикл each
+
+                        if (callback) callback(target, el_fo_search); //выполняем callback на успешное обнаружение элемента, в параметрах передаём элемент который отследили target и элемент в котором отслеживали el_fo_search
+
+                    } else return result = false; //если не заданны плоскости в которых необходимо отслеживать нахождение элемента!
+                }
+                //если нужно определить когда элемент полностью находится в нужных плоскостях элемента where_search
+
+                //если нужно просто определить пересёк ли отслеживаемый элемент указанные границы элемента where_search
+                else {
+                    //если задано отслеживать пересечение элементом верхней границы элементов where_search
+                    if (settings.search_dir.top) {
+                        //если элемент не пересекал верхнюю границу элементов where_search
+                        if (el_fo_search_position.top >= target_data.bottom) return result = false; //помечаем что уже неудовлетворили хотяб одному условию и можно прерывать дальнейшие проверки и прерываем текущий цикл each
+                    }
+                    //если задано отслеживать пересечение элементом верхней границы элементов where_search
+
+                    //если задано отслеживать пересечение элементом правой границы элементов where_search
+                    if (settings.search_dir.right) {
+                        //если элемент не пересекал правую границу элементов where_search
+                        if (el_fo_search_position.right <= target_data.left) return result = false;
+                    }
+                    //если задано отслеживать пересечение элементом правой границы элементов where_search
+
+                    //если задано отслеживать пересечение элементом нижней границы элементов where_search
+                    if (settings.search_dir.bottom) {
+                        //если элемент не пересекал нижнюю границу элементов where_search
+                        if (el_fo_search_position.bottom <= target_data.top) return result = false;
+                    }
+                    //если задано отслеживать пересечение элементом нижней границы элементов where_search
+
+                    //если задано отслеживать пересечение элементом левой границы элементов where_search
+                    if (settings.search_dir.left) {
+                        //если элемент не пересекал левую границу элементов where_search
+                        if (el_fo_search_position.left >= target_data.right) return result = false;
+                    }
+                    //если задано отслеживать пересечение элементом левой границы элементов where_search
+                }
+                //если нужно просто определить пересёк ли отслеживаемый элемент указанные границы элемента where_search
+
+                if (callback) callback(target, el_fo_search); //выполняем callback на успешное обнаружение элемента при пересечении отслеживаемых границ, в параметрах передаём элемент который отследили target и элемент в котором отслеживали el_fo_search
+            });
+            //перебираем все элементы в которых мы ищем пересечение границ текущего искомого элемента target
+
+        });
+        //выполяняем проверку для каждого отслеживаемого элемента
+
+        return result; //если вернёт true значит позиция искомых элементов удовлетворила условиям отслеживания относительно границ элементов where_search
+    },
+    //проверяем видимость элемента для заданых элементов, т.е. находится ли элемент какой-то своей частью в пределах проверяемх блоков, или в пределах окна браузера
 }
 //объект с основными функциями
 
