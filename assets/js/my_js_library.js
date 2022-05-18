@@ -611,7 +611,7 @@ const bf = {
             path: '/'
         };
 
-        options = Object.assign({}, default_options, options);//объединяем объекты со значением по умолчанию и переданные пользователем
+        options = Object.assign({}, default_options, options); //объединяем объекты со значением по умолчанию и переданные пользователем
 
         name = decodeURIComponent(name); //получаем "uswvewvc vw vw vweer" из "uswvewvc%20vw%20vw%20vweer" или "uswvewvc vw vw vweer" из "uswvewvc vw vw vweer"
         name = encodeURIComponent(name); //получаем "uswvewvc%20vw%20vw%20vweer" из "uswvewvc vw vw vweer"
@@ -923,6 +923,15 @@ const KSN_jQuery = {
         return this.construct_new_ksn(obj); //возвращаем объект
     },
     //производит итерации над объектами и для каждого итирируемого элемента объекта вызиывает функцию callback
+
+    //добавляет к нашему объекту this элементы найденые по selectors
+    //selectors - элементы которые нужно добавить
+    add: function(selectors) {
+        let add_obj = ksn().init(selectors), //получаем ksn объект с элементами найдеными по selectors , ksn() === $()
+            result = this.return_skleniy_arr(this, add_obj); //объединяем два объекта в массив
+        return this.construct_new_ksn(result); //возвращаем ksn объект сформированный на основе массива result
+    },
+    //добавляет к нашему объекту this элементы найденые по selectors
 
     //добавляем слушатель события
     //event - строка событий которые нужно прослушивать на элементе, пример: "touchend click resize focus blur"
@@ -1539,7 +1548,6 @@ const KSN_jQuery = {
             //список название временных функций с их конструкторами
             elements = this, //текущие элементы для анимации нужно чтоб обратится к этому this внутри других функций
             final_data = [], //будет хранить все уже просчитанные значение стилей для анимации для каждого элемента который нужно анимировать
-            animate_complit = false, //сигнализирует об окончании анимации
             timing_fu_list = {
                 "linear": function(remaning_time) {
                     return remaning_time;
@@ -1556,8 +1564,29 @@ const KSN_jQuery = {
                 "dropped-ball": function(remaning_time, x = 1.5) {
                     return Math.pow(2, 10 * (remaning_time - 1)) * Math.cos(20 * Math.PI * x / 3 * remaning_time)
                 }
-            };
-        //список название временных функций с их конструкторами
+            },
+            //список название временных функций с их конструкторами
+            exceptions_css = { //свойства исключения процентные значение которых беррутся у родителя от других свойств
+                "margin": "width",
+                "margin-top": "width",
+                "margin-right": "width",
+                "margin-bottom": "width",
+                "margin-left": "width",
+                "padding": "width",
+                "padding-top": "width",
+                "padding-right": "width",
+                "padding-bottom": "width",
+                "padding-left": "width",
+                "line-height": "font-size",
+                "left": "width",
+                "right": "width",
+                "top": "height",
+                "bottom": "height"
+            },
+            exceptions_props = [ //исключения, свойства элемента которые высчитываются не от css параметров
+                "scrollTop",
+                "scrollLeft"
+            ];
 
         //находим из списка нужный нам конструктор временнйо функции
         for (let func_name in timing_fu_list) {
@@ -1578,6 +1607,33 @@ const KSN_jQuery = {
 
                     if (property === "elements") continue; //если в свойстве передан элемент переходим сразу к следующей итерации
 
+                    //если свойство для анимации НЕ css
+                    if (exceptions_props.indexOf(property) !== -1) {
+                        let start_value = el[0][property], //числовое занчение свойства в начльный момент времени
+                            finall_value = Number(styles[property].replace(/^(\+|-)=|px|%/g, "")), //числовое занчение свойства до которого нужно анимировать
+                            increase = styles[property].includes("+=") ? true : false, //если задано увеличить исходное занчение свойство на данную величину
+                            decrease = styles[property].includes("-=") ? true : false; //если задано уменьшить исходное занчение свойство на данную величину
+
+                        if (increase) finall_value = start_value + finall_value; //если задано увеличить исходное занчение свойство на данную величину
+
+                        if (decrease) finall_value = start_value - finall_value; //если задано уменьшить исходное занчение свойство на данную величину
+
+                        let shift_value = finall_value - start_value, //числовое занчение на сколько по итогу нужно изменить свойство элемента
+                            data = {
+                                "property": property, //название css свойства
+                                "start_value": start_value, //числовое занчение свойства в начльный момент времени
+                                "finall_value": finall_value, //числовое занчение свойства в конце анимации
+                                "shift_value": shift_value, //числовое занчение на сколько по итогу нужно изменить свойство элемента
+                                "increase": increase,
+                                "decrease": decrease
+                            };
+
+                        data_styles.push(data); //записываем в конец массива data_styles
+
+                        continue; //пропускаем оставшиее операции для данного итерируемого свойства
+                    }
+                    //если свойство для анимации НЕ css
+
                     let start_value = Number(el.css(property).replace("px", "")), //числовое занчение свойства в начльный момент времени
                         finall_value = Number(styles[property].replace(/^(\+|-)=|px|%/g, "")), //числовое занчение свойства до которого нужно анимировать
                         units = styles[property].includes("px") ? "px" : (styles[property].includes("%") ? "%" : null), //единицы измерения которые переданы для значения css свойства px или %
@@ -1587,43 +1643,16 @@ const KSN_jQuery = {
                     //если значение указанов  процентах
                     if (units === "%") {
                         //свойства исключения процентные значение которых беррутся у родителя от других свойств
-                        let exceptions = {
-                                "margin": "width",
-                                "margin-top": "width",
-                                "margin-right": "width",
-                                "margin-bottom": "width",
-                                "margin-left": "width",
-                                "padding": "width",
-                                "padding-top": "width",
-                                "padding-right": "width",
-                                "padding-bottom": "width",
-                                "padding-left": "width",
-                                "line-height": "font-size",
-                                "left": "width",
-                                "right": "width",
-                                "top": "height",
-                                "bottom": "height"
-                            },
-                            //свойства исключения процентные значение которых беррутся у родителя от других свойств
-
-                            parent_prop_value = exceptions.hasOwnProperty(property) ? Number(el.parent().css(exceptions[property]).replace("px", "")) : Number(el.parent().css(property).replace("px", "")); //получаем значение этого свойства у родтельского элемента
+                        let parent_prop_value = exceptions_css.hasOwnProperty(property) ? Number(el.parent().css(exceptions_css[property]).replace("px", "")) : Number(el.parent().css(property).replace("px", "")); //получаем значение этого свойства у родтельского элемента
 
                         finall_value = (parent_prop_value * finall_value) / 100; //конечное значение свойства
                         units = "px"; //меняем единицы измерения на пиксели
                     }
                     //если значение указанов  процентах
 
-                    //если задано увеличить исходное занчение свойство на данную величину
-                    if (increase) {
-                        finall_value = start_value + finall_value;
-                    }
-                    //если задано увеличить исходное занчение свойство на данную величину
+                    if (increase) finall_value = start_value + finall_value; //если задано увеличить исходное занчение свойство на данную величину
 
-                    //если задано уменьшить исходное занчение свойство на данную величину
-                    if (decrease) {
-                        finall_value = start_value - finall_value;
-                    }
-                    //если задано уменьшить исходное занчение свойство на данную величину
+                    if (decrease) finall_value = start_value - finall_value; //если задано уменьшить исходное занчение свойство на данную величину
 
                     let shift_value = finall_value - start_value, //числовое занчение на сколько по итогу нужно изменить свойство элемента
                         data = {
@@ -1680,6 +1709,14 @@ const KSN_jQuery = {
                 final_data.forEach((data_item) => {
                     data_item.styles_data.forEach((style) => {
                         let sdvig = style.start_value + (style.shift_value * progress); //текущее изменение значения
+
+                        //если свойство для анимации НЕ css
+                        if (exceptions_props.indexOf(style.property) !== -1) {
+                            data_item.elements[0][style.property] = sdvig; //обновляем значение свойства
+                            return;
+                        }
+                        //если свойство для анимации НЕ css
+
                         data_item.elements.css(style.property, sdvig + style.units); //задаём элементу обновлённое значение текущего css свойства
                     });
                 });
@@ -1691,37 +1728,35 @@ const KSN_jQuery = {
             animate_init = function() {
                 let start_time = performance.now(); //записываем время начала анимации, в качестве точки отсчёта будем брать время прошедшее с момента создания данного документа
 
-                //начинаем перерисовку элемента по заданному функцией алгоритму rendering_fu
-                requestAnimationFrame(function animate(time) {
-                    let past_time = (time - start_time) / duration; //получаем значение пройденного времени с начала анимации с учётом её длительности, значение начинается с 0 - начало анимации, и заканчивается 1 - конец анимации. т.е. если прошла треть анимации past_time = 0,3333, если вдруг значение получилось меньше нуля то делаем его нулём
-                    //загоняем past_time в пределы от 0 до 1
-                    if (past_time < 0) past_time = 0;
-                    if (past_time > 1) past_time = 1;
-                    //загоняем past_time в пределы от 0 до 1
+                return new Promise((resolve) => {
+                    //time - в неё передаётся время прошедшее с начала создания документа performance.now()
+                    let animate = (time) => {
+                        let past_time = (time - start_time) / duration; //получаем значение пройденного времени с начала анимации с учётом её длительности, значение начинается с 0 - начало анимации, и заканчивается 1 - конец анимации. т.е. если прошла треть анимации past_time = 0,3333, если вдруг значение получилось меньше нуля то делаем его нулём
+                        //загоняем past_time в пределы от 0 до 1
+                        if (past_time < 0) past_time = 0;
+                        if (past_time > 1) past_time = 1;
+                        //загоняем past_time в пределы от 0 до 1
 
-                    let progress = timing_algoritm_chenge(past_time); // вычисляем текущее состояние анимации в зависимости от пройденного времени
+                        let progress = timing_algoritm_chenge(past_time); // вычисляем текущее состояние анимации в зависимости от пройденного времени
 
-                    rendering_animation(progress); //отрисовываем анимацию в зависимости от текущего прогресса
+                        rendering_animation(progress); //отрисовываем анимацию в зависимости от текущего прогресса
 
-                    if (past_time !== 1) {
-                        requestAnimationFrame(animate); //запускаем отрисовку этой анимации о тех пор пока условное время past_time пройденное с начала анимаци не станет равным 1, т.е. до тех пор пока анимация не закончится
-                    } else {
-                        animate_complit = true; //помечаем что анимация успешно завершилась
-                        if (callback) callback(); //если занан колбек в конце анимации запускаем его
-                    }
+                        if (past_time !== 1) {
+                            requestAnimationFrame(animate); //запускаем отрисовку этой анимации о тех пор пока условное время past_time пройденное с начала анимаци не станет равным 1, т.е. до тех пор пока анимация не закончится
+                        } else {
+                            if (callback) callback(); //если занан колбек в конце анимации запускаем его
+                            resolve(); //по окончанию анимации возвращаем успешно выполненый промис
+                        }
+                    };
 
+                    requestAnimationFrame(animate); //начинаем перерисовку элемента
                 });
-                //начинаем перерисовку элемента по заданному функцией алгоритму rendering_fu
             };
         //функция для анимирования всех нужных стилей элемента
 
         calculate_final_data_fo_anim(data_fo_anim); //записываем а массив final_data данные для каждой анимации по каждому набору элементов
 
-        animate_init(); //запускаем анимацию передав в неё все необходиме  данные
-
-        return new Promise((resolve, reject) => {
-            bf.wait(() => { return animate_complit; }, true, (duration / 1000) + 5).then(() => { resolve() }).catch(() => { reject() });
-        }); //возвращаем промис
+        return animate_init(); //запускаем анимацию передав в неё все необходиме  данные и возвращаем промис
     },
     //анимирует элементы
 

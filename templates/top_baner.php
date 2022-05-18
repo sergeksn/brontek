@@ -18,8 +18,14 @@ function generate_string() {
 ?>
 <div class="top_banner_wrap col-12" id="id_NKkGUF0X9DGuvct">
     <a href="#">
-        <div class="img_wrapper" style="padding-top: 4.1667%;">
+        <div class="img_wrapper desktop_baner" style="padding-top: 4.1667%;">
             <img data-type="img_content" data-src="/img/header/banner.jpg" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
+        </div>
+        <div class="img_wrapper tablet_baner" style="padding-top: 4.1667%;">
+            <img data-type="img_content" data-src="/img/header/banner.jpg" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
+        </div>
+        <div class="img_wrapper mobile_baner" style="padding-top: 18.75%;">
+            <img data-type="img_content" data-src="/img/header/banner2.jpg" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
         </div>
     </a>
     <div class="close_banner_wrap">

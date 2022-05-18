@@ -159,9 +159,16 @@
         </div>
     </div>
 </footer>
+
+<div class="scroll_to_top_wrapper">
+    <div class="img_wrapper scroll_to_top_img_wrapper" style="padding-top:0.6462%;">
+        <img data-src="/img/dizayn/scrol_to_top_arrow.svg" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Вверх!">
+    </div>
+</div>
+
 <!--<script src="/assets/js/jquery.js"></script>-->
 <script src="/assets/js/my_js_library.js"></script>
-<script src="/assets/js/main.js"></script>
+<script type="module" src="/assets/js/main.js"></script>
 </body>
 
 </html>

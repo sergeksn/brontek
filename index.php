@@ -40,6 +40,8 @@
             position: relative; 
             left: 0px;
             ">block_3</div>
+
+            
         </div>
     <?php /*
         $url = $_SERVER['REQUEST_URI'];

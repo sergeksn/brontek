@@ -19,6 +19,7 @@ $svg = file_get_contents("img/search/qashqai_front_stencil.svg");
    
     
 
+
  
 //полняем поиск по товарам и получаем готовую html разметку
 function search($text){
@@ -26,8 +27,10 @@ function search($text){
 
 	$respons = "";//сюда будет записан итоговый ответ
 
-	if($result->num_rows === 0){
+	//ВАЖНО: одинарная кавычка выдаёт ошибку, и $result вернёт false
+	if(!$result || $result->num_rows === 0){
 		$respons .= '<div class="search_fail">По Вашему запросу <span>"'.$text.'"</span> ничего не найдено =(</div>';
+		return $respons;//функция возвращает строку с готовой html разметкой для вывода в поисковой блок
 	}
 
 	//после завершения поиска перебираем все результаты
@@ -44,10 +47,10 @@ function search($text){
 		//будет получать url картинки для поиска данного товара и даддинг для этой картинки
 
 		$instruction_title_text = 'Инструкция по монтажу "'.$title.'"';//текст заголовка результата поиска инструкции
-		$instruction_img_block = '<div class="product_prevu_img_block" style="padding-top: 66.6666%;"><img data-src="/img/search/instruction.jpg"></div>';//блок картинки поиска инструкций
+		$instruction_img_block = '<div class="product_prevu_img_block" style="padding-top: 66.6666%;"><img data-src="/img/search/instruction.jpg"><div class="grad_fon"></div></div>';//блок картинки поиска инструкций
 
 		if($row['product_data'] === ""){//временная заглушка
-			$img_block =  "<div class=\"product_prevu_img_block\" style=\"padding-top: 66.6666%;\"><img data-src=\"/img/search/search.jpg\"><img data-src=\"/img/search/main_overlay.svg\"><img data-src=\"/img/search/fary.svg\"><img data-src=\"/img/search/perednie_stoyki.svg\"></div>";
+			$img_block =  "<div class=\"product_prevu_img_block\" style=\"padding-top: 66.6666%;\"><img data-src=\"/img/search/search.jpg\"><img data-src=\"/img/search/main_overlay.svg\"><img data-src=\"/img/search/fary.svg\"><img data-src=\"/img/search/perednie_stoyki.svg\"><div class=\"grad_fon\"></div></div>";
 		} else {
 			$product_data = json_decode($row['product_data']);
 			$img_block = $product_data->img_block;//полный блок картинки товара, в нём основная картинка с наложенными слоями svg деталей которые нужны для конкретного товара
